@@ -1,0 +1,405 @@
+import React, { useState, useEffect } from 'react';
+
+
+import { Search, Save, Plus, Trash2, Plane, Wrench } from 'lucide-react';
+import SaveButton from './SaveButton';
+import { mockAircrafts } from '../data';
+import { authService } from '../services/authService';
+
+const AircraftList = () => {
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
+
+  const [aircraft, setAircraft] = useState([]);
+  const [saved, setSaved] = useState(false);
+
+  const [search, setSearch] = useState('');
+  const [selectedAircraft, setSelectedAircraft] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+
+  const loadData = () => {
+    let storedAircraft = [];
+    try {
+      storedAircraft = JSON.parse(localStorage.getItem('userAircraft'));
+      if (!storedAircraft) {
+        // First load: seed with mock aircraft
+        storedAircraft = [...mockAircrafts].map(a => ({
+          ...a,
+          baseLocation: 'KVPZ',
+          totalHours: 1250,
+          maxCruiseSpeed: 120,
+          lastInspection: '2025-10-01',
+          nextInspection: '2026-10-01',
+          notes: ''
+        }));
+        localStorage.setItem('userAircraft', JSON.stringify(storedAircraft));
+      }
+    } catch (e) {
+      console.error(e);
+      storedAircraft = [];
+    }
+
+    // Sort by tail number
+    storedAircraft.sort((a, b) => a.id.localeCompare(b.id));
+    setAircraft(storedAircraft);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const filteredAircraft = aircraft.filter(a => 
+    a.id.toLowerCase().includes(search.toLowerCase()) || 
+    (a.model && a.model.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const handleSelect = (ac) => {
+    setSelectedAircraft(ac);
+    setEditForm({ ...ac, originalId: ac.id });
+  };
+
+  const handleAddNew = () => {
+    const newId = `N${Math.floor(1000 + Math.random() * 9000)}X`;
+    const newAircraft = {
+      id: newId,
+      model: 'Unknown Model',
+      status: 'Available',
+      baseLocation: '',
+      totalHours: 0,
+      maxCruiseSpeed: 120,
+      lastInspection: '',
+      nextInspection: '',
+      notes: '',
+      isNew: true
+    };
+    setSelectedAircraft(newAircraft);
+    setEditForm(newAircraft);
+  };
+
+  const handleDelete = () => {
+    if (!editForm) return;
+    if (!window.confirm(`Are you sure you want to delete ${editForm.id}?`)) return;
+    try {
+      const storedAircraft = JSON.parse(localStorage.getItem('userAircraft') || '[]');
+      const updatedAircraft = storedAircraft.filter(a => a.id !== editForm.originalId && a.id !== editForm.id);
+      localStorage.setItem('userAircraft', JSON.stringify(updatedAircraft));
+      loadData();
+      setSelectedAircraft(null);
+      setEditForm(null);
+    } catch (e) {
+      alert('Failed to delete aircraft.');
+    }
+  };
+
+  const handleSave = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!editForm) return;
+
+    try {
+      const storedAircraft = JSON.parse(localStorage.getItem('userAircraft') || '[]');
+      
+      const acToSave = { ...editForm };
+      const originalId = acToSave.originalId || acToSave.id;
+      delete acToSave.isNew;
+      delete acToSave.originalId;
+
+      const existingIndex = storedAircraft.findIndex(a => a.id === originalId);
+      const oldAc = existingIndex >= 0 ? storedAircraft[existingIndex] : {};
+      
+      const metrics = [
+         { key: 'totalHours', label: 'Aircraft Hours' },
+         { key: 'landings', label: 'Aircraft Landings' },
+         { key: 'engineHours', label: 'Engine Hours' },
+         { key: 'engineCycles', label: 'Engine Cycles' },
+         { key: 'hobbs', label: 'Hobbs' },
+         { key: 'status', label: 'Status' },
+         { key: 'baseLocation', label: 'Base Location' }
+      ];
+
+      const changes = [];
+      metrics.forEach(m => {
+         let oldVal = oldAc[m.key];
+         if (oldVal === undefined || oldVal === null) oldVal = (m.key === 'status' || m.key === 'baseLocation') ? '' : 0;
+         let newVal = acToSave[m.key];
+         if (newVal === undefined || newVal === null) newVal = (m.key === 'status' || m.key === 'baseLocation') ? '' : 0;
+         
+         if (String(oldVal) !== String(newVal)) {
+            changes.push(`${m.label} from '${oldVal}' to '${newVal}'`);
+         }
+      });
+      
+      if (changes.length > 0 && !editForm.isNew) {
+         if (!acToSave.auditLog) acToSave.auditLog = [];
+         acToSave.auditLog.push(`Admin (${currentUser?.name || 'Unknown'}) updated: ${changes.join(', ')} on ${new Date().toLocaleString()}`);
+      } else if (editForm.isNew) {
+         if (!acToSave.auditLog) acToSave.auditLog = [];
+         acToSave.auditLog.push(`Aircraft created by Admin (${currentUser?.name || 'Unknown'}) on ${new Date().toLocaleString()}`);
+      }
+
+      if (existingIndex >= 0) {
+        storedAircraft[existingIndex] = acToSave;
+      } else {
+        storedAircraft.push(acToSave);
+      }
+
+      localStorage.setItem('userAircraft', JSON.stringify(storedAircraft));
+      
+      loadData();
+      setSelectedAircraft(acToSave);
+      setEditForm({ ...acToSave, originalId: acToSave.id });
+      setSaved(prev => !prev);
+    } catch (e) {
+      console.error('Failed to save aircraft.');
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 120px)' }}>
+      {/* LEFT COLUMN: LIST */}
+      <div className="card" style={{ width: '350px', display: 'flex', flexDirection: 'column', padding: '15px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Plane size={18} /> Aircraft
+          </h3>
+          <button onClick={handleAddNew} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Plus size={14} /> Add Aircraft
+          </button>
+        </div>
+        
+        <div style={{ position: 'relative', marginBottom: '15px' }}>
+          <input 
+            type="text" 
+            placeholder="Search by Tail Number or Model..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: '100%', padding: '8px 8px 8px 30px', borderRadius: '4px', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}
+          />
+          <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '8px', top: '10px' }} />
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {filteredAircraft.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '20px', fontSize: '0.875rem' }}>
+              No aircraft found.
+            </div>
+          ) : (
+            filteredAircraft.map(ac => (
+              <div 
+                key={ac.id}
+                onClick={() => handleSelect(ac)}
+                style={{
+                  padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  backgroundColor: selectedAircraft?.id === ac.id ? 'var(--primary-light)' : 'white',
+                  borderLeft: selectedAircraft?.id === ac.id ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <strong style={{ fontSize: '0.875rem' }}>{ac.id}</strong>
+                  <span style={{ 
+                    fontSize: '0.65rem', 
+                    padding: '2px 6px', 
+                    borderRadius: '10px',
+                    backgroundColor: ac.status === 'Available' ? '#c6f6d5' : ac.status === 'Maintenance' ? '#fed7d7' : '#feebc8',
+                    color: ac.status === 'Available' ? '#22543d' : ac.status === 'Maintenance' ? '#822727' : '#7b341e'
+                  }}>
+                    {ac.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
+                  <span>{ac.model}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{ac.totalHours} hrs</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{ac.maxCruiseSpeed} kts</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: EDITOR */}
+      <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px', overflowY: 'auto' }}>
+        {!selectedAircraft ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+            <Plane size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
+            <h3>Select an Aircraft</h3>
+            <p style={{ fontSize: '0.875rem' }}>Click on an aircraft from the left to view or edit its details.</p>
+          </div>
+        ) : (
+          <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '5px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h2 style={{ margin: 0, color: 'var(--primary-color)' }}>
+                  <input 
+                    type="text" 
+                    value={editForm.id} 
+                    onChange={(e) => setEditForm({...editForm, id: e.target.value.toUpperCase()})}
+                    style={{ fontSize: '1.5rem', fontWeight: 'bold', border: 'none', borderBottom: '2px dashed var(--border-color)', width: '150px', outline: 'none', backgroundColor: 'transparent', color: 'inherit' }}
+                    placeholder="TAIL NUMBER"
+                    required
+                  />
+                </h2>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Make & Model</label>
+                <input 
+                  type="text" 
+                  value={editForm.model || ''} 
+                  onChange={(e) => setEditForm({...editForm, model: e.target.value})}
+                  placeholder="e.g. Bell 407, Airbus H125"
+                  required
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Status</label>
+                <select 
+                  value={editForm.status || 'Available'}
+                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                >
+                  <option value="Available">Available</option>
+                  <option value="Maintenance">Maintenance (AOG)</option>
+                  <option value="Reserved">Reserved</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              {/* Operational Info */}
+              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px', border: '1px solid var(--border-color)', borderRadius: '6px', backgroundColor: 'var(--bg-color)' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Plane size={16} /> Operational Data
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Base Location</label>
+                  <input 
+                    type="text" 
+                    value={editForm.baseLocation || ''} 
+                    onChange={(e) => setEditForm({...editForm, baseLocation: e.target.value})}
+                    placeholder="e.g. KVPZ"
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Max Cruise Speed (Knots)</label>
+                  <input 
+                    type="number" 
+                    value={editForm.maxCruiseSpeed || 120} 
+                    onChange={(e) => setEditForm({...editForm, maxCruiseSpeed: parseInt(e.target.value) || 120})}
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Logbook Totals */}
+              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px', border: '1px solid var(--border-color)', borderRadius: '6px', backgroundColor: 'var(--bg-color)' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Plane size={16} /> Logbook Totals
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Aircraft Hours</label>
+                    <input type="number" step="0.1" value={editForm.totalHours || 0} onChange={(e) => setEditForm({...editForm, totalHours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Aircraft Landings</label>
+                    <input type="number" value={editForm.landings || 0} onChange={(e) => setEditForm({...editForm, landings: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine Hours</label>
+                    <input type="number" step="0.1" value={editForm.engineHours || 0} onChange={(e) => setEditForm({...editForm, engineHours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine Cycles</label>
+                    <input type="number" value={editForm.engineCycles || 0} onChange={(e) => setEditForm({...editForm, engineCycles: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Hobbs Meter</label>
+                    <input type="number" step="0.1" value={editForm.hobbs || 0} onChange={(e) => setEditForm({...editForm, hobbs: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Maintenance Tracking */}
+              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Wrench size={16} /> Maintenance Tracking
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Last Inspection Date</label>
+                    <input 
+                      type="date" 
+                      value={editForm.lastInspection || ''} 
+                      onChange={(e) => setEditForm({...editForm, lastInspection: e.target.value})}
+                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Next Inspection Due</label>
+                    <input 
+                      type="date" 
+                      value={editForm.nextInspection || ''} 
+                      onChange={(e) => setEditForm({...editForm, nextInspection: e.target.value})}
+                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--accent-color)' }}>Maintenance Notes & Squawks</label>
+              <textarea 
+                value={editForm.notes || ''} 
+                onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                placeholder="e.g. Avionics update required on next inspection..."
+                style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', minHeight: '100px', resize: 'vertical', fontSize: '0.875rem' }}
+              />
+            </div>
+
+            {editForm.auditLog && editForm.auditLog.length > 0 && (
+              <div style={{ marginTop: '10px', padding: '15px', backgroundColor: '#fff5f5', border: '1px solid #feb2b2', borderRadius: '4px' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '0.875rem', color: '#c53030' }}>Logbook Audit Trail</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.75rem', color: '#742a2a' }}>
+                  {editForm.auditLog.map((log, i) => (
+                    <li key={i} style={{ marginBottom: '4px' }}>{log}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', borderTop: '1px solid var(--border-color)', paddingTop: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {!editForm.isNew && (
+                  <button type="button" className="btn btn-outline" style={{ color: 'red', borderColor: 'red', display: 'flex', alignItems: 'center', gap: '5px' }} onClick={handleDelete}>
+                    <Trash2 size={16} /> Delete Aircraft
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {JSON.stringify(editForm) !== JSON.stringify(selectedAircraft) && (
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    onClick={() => setEditForm({ ...selectedAircraft })}
+                  >
+                    Discard Changes
+                  </button>
+                )}
+                <SaveButton onClick={handleSave} triggerSave={saved} disabled={!editForm.id}>Save Aircraft</SaveButton>
+              </div>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AircraftList;
