@@ -227,23 +227,16 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
 
   const isRowValid = (exp) => {
     if (!isRowFilled(exp)) return true;
-    const basicValid = exp.vendor && exp.category && exp.location && (exp.amount !== '' && exp.amount != null);
-    const hasGallons = exp.gallons !== '' && exp.gallons != null && parseFloat(exp.gallons) > 0;
-    if (hasGallons) {
-      return basicValid && (exp.fuelType || exp.vendor);
-    }
-    return basicValid;
+    return exp.vendor && exp.category && exp.location && (exp.amount !== '' && exp.amount != null);
   };
 
   const getStyle = (exp, field, baseStyle = inputStyle) => {
     if (!isRowFilled(exp)) return baseStyle;
     let isMissing = false;
-    const hasGallons = exp.gallons !== '' && exp.gallons != null && parseFloat(exp.gallons) > 0;
-    if (field === 'vendor') isMissing = !exp.vendor || (hasGallons && !exp.vendor && !exp.fuelType);
+    if (field === 'vendor') isMissing = !exp.vendor;
     else if (field === 'category') isMissing = !exp.category;
     else if (field === 'location') isMissing = !exp.location;
     else if (field === 'amount') isMissing = (exp.amount === '' || exp.amount == null);
-    else if (field === 'fuelType') isMissing = hasGallons && !exp.fuelType && !exp.vendor;
     
     return { ...baseStyle, border: isMissing ? '1px solid #e53e3e' : baseStyle.border, backgroundColor: isMissing ? '#fff5f5' : (baseStyle.backgroundColor || 'transparent') };
   };
@@ -299,15 +292,9 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                       style={getStyle(exp, 'vendor', { width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.75rem' })}
                     >
                       <option value="">Vendor</option>
-                      {vendorsList.map(v => {
-                        const val = v.vendorId || v.name;
-                        const isSelectedInOtherRow = expenses.some(otherExp => otherExp.id !== exp.id && otherExp.vendor === val);
-                        return (
-                          <option key={v.id} value={val} disabled={isSelectedInOtherRow}>
-                            {val} {isSelectedInOtherRow ? '(Selected)' : ''}
-                          </option>
-                        );
-                      })}
+                      {vendorsList.map(v => (
+                        <option key={v.id} value={v.vendorId || v.name}>{v.vendorId || v.name}</option>
+                      ))}
                     </select>
                   </td>
                   <td style={tdStyle}>
@@ -340,16 +327,20 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                     </select>
                   </td>
                   <td style={tdStyle}>
-                    <select value={exp.fuelType || ''} onChange={e => handleUpdate(exp.id, 'fuelType', e.target.value)} style={getStyle(exp, 'fuelType', { ...inputStyle, color: exp.fuelType ? 'inherit' : '#a0aec0' })}>
+                    <select value={exp.fuelType || ''} onChange={e => handleUpdate(exp.id, 'fuelType', e.target.value)} style={{ ...inputStyle, color: exp.fuelType ? 'inherit' : '#a0aec0' }}>
                       <option value="" disabled>Select Fuel</option>
-                      {['Avfuel', 'AEG', 'Atlantic', 'Everest', 'EVO', 'FBO', 'Phillip66', 'Signature', 'Titan', 'World Fuel', 'CAA', 'Other'].map(fOpt => {
-                        const isSelectedInOtherRow = expenses.some(otherExp => otherExp.id !== exp.id && otherExp.fuelType === fOpt);
-                        return (
-                          <option key={fOpt} value={fOpt} disabled={isSelectedInOtherRow}>
-                            {fOpt} {isSelectedInOtherRow ? '(Selected)' : ''}
-                          </option>
-                        );
-                      })}
+                      <option value="Avfuel">Avfuel</option>
+                      <option value="AEG">AEG</option>
+                      <option value="Atlantic">Atlantic</option>
+                      <option value="Everest">Everest</option>
+                      <option value="EVO">EVO</option>
+                      <option value="FBO">FBO</option>
+                      <option value="Phillip66">Phillip66</option>
+                      <option value="Signature">Signature</option>
+                      <option value="Titan">Titan</option>
+                      <option value="World Fuel">World Fuel</option>
+                      <option value="CAA">CAA</option>
+                      <option value="Other">Other</option>
                     </select>
                   </td>
                   <td style={tdStyle}>
