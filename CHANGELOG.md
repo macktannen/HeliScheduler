@@ -2,6 +2,14 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.13] - 2026-08-05
+
+### Added
+- **Unselectable Fuel Vendors in Dropdowns**: Options already selected in previous expense rows are now disabled with `(Selected)` text in the vendor dropdowns to prevent duplicate selection.
+- **Conditional Fuel Vendor Requirement**: Entering a number in the gallons (`Gal`) field now requires selecting a fuel vendor / fuel type, highlighting missing fields in red until selected.
+
+---
+
 ## [v0.1.12] - 2026-08-05
 
 ### Changed
