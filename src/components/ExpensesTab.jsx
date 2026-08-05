@@ -328,7 +328,7 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                   </td>
                   <td style={tdStyle}>
                     <select value={exp.fuelType || ''} onChange={e => handleUpdate(exp.id, 'fuelType', e.target.value)} style={{ ...inputStyle, color: exp.fuelType ? 'inherit' : '#a0aec0' }}>
-                      <option value="" disabled>Select Fuel</option>
+                      <option value="">-- Select Fuel --</option>
                       <option value="Avfuel">Avfuel</option>
                       <option value="AEG">AEG</option>
                       <option value="Atlantic">Atlantic</option>
