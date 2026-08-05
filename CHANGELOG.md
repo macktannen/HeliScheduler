@@ -2,6 +2,13 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.9] - 2026-08-05
+
+### Added
+- **AI Agent Workflow Rules (`AGENTS.md`, `GEMINI.md`, `.agents/rules/workflow.md`)**: Enforced mandatory automated workflow across all AI models (version bump in sidebar, CHANGELOG entry, data sync, and git push).
+
+---
+
 ## [v0.1.8] - 2026-08-05
 
 ### Added

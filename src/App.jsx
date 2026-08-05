@@ -9,7 +9,7 @@ import AircraftList from './components/AircraftList';
 import PassengersList from './components/PassengersList';
 import CrewView from './components/CrewView';
 import { initDataSync } from './services/dataSyncService';
-const APP_VERSION = "v0.1.8";
+const APP_VERSION = "v0.1.9";
 import AccountsContactsView from './components/AccountsContactsView';
 import ExpensesPage from './components/ExpensesPage';
 import SettingsView from './components/SettingsView';
