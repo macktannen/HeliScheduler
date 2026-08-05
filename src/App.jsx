@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Users, Settings, MapPin, Plane, UserCheck, Building, LogOut } from 'lucide-react';
 import './index.css';
@@ -8,7 +8,8 @@ import LocationsView from './components/LocationsView';
 import AircraftList from './components/AircraftList';
 import PassengersList from './components/PassengersList';
 import CrewView from './components/CrewView';
-const APP_VERSION = "v0.1.7";
+import { initDataSync } from './services/dataSyncService';
+const APP_VERSION = "v0.1.8";
 import AccountsContactsView from './components/AccountsContactsView';
 import ExpensesPage from './components/ExpensesPage';
 import SettingsView from './components/SettingsView';
@@ -22,6 +23,14 @@ function DashboardLayout() {
   const [activeTab, setActiveTab] = useState('calendar');
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const cleanup = initDataSync(() => {
+      // Force UI re-render on sync when storage updates
+      window.dispatchEvent(new Event('storage'));
+    });
+    return cleanup;
+  }, []);
 
   const handleLogout = async () => {
     await logout();

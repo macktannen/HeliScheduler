@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Filter, Settings, Plane, X, Plus, GripVertical } from 'lucide-react';
 import { startOfWeek, addDays, format, subWeeks, addWeeks, isSameDay } from 'date-fns';
 import airportsData from '../data/airports.json';
@@ -57,6 +57,7 @@ const CrewSchedule = () => {
   const [schedules, setSchedules] = useState({});
   const [visibleIds, setVisibleIds] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef(null);
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [cellModalOpen, setCellModalOpen] = useState(null); // { personId, dateStr, status, x, y }
   const [activeDuplicateStatus, setActiveDuplicateStatus] = useState(null);
@@ -70,6 +71,20 @@ const CrewSchedule = () => {
   const [genStartDate, setGenStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [genMode, setGenMode] = useState('7/7'); // '7/7' or 'specific'
   const [genDays, setGenDays] = useState([1, 2, 3, 4, 5]); // Default Mon-Fri
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const pilots = JSON.parse(localStorage.getItem('userPilots') || '[]');
@@ -259,30 +274,32 @@ const CrewSchedule = () => {
           <button className="btn btn-outline" onClick={() => setGeneratorOpen(true)}>
             <Settings size={16} /> Schedule Generator
           </button>
-          <button className="btn btn-outline" onClick={() => setIsFilterOpen(!isFilterOpen)}>
-            <Filter size={16} /> Visible Personnel
-          </button>
+          <div ref={filterRef} style={{ position: 'relative' }}>
+            <button className="btn btn-outline" onClick={() => setIsFilterOpen(!isFilterOpen)}>
+              <Filter size={16} /> Visible Personnel
+            </button>
 
-          {isFilterOpen && (
-            <div style={{ position: 'absolute', top: '45px', right: '0', backgroundColor: 'white', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '15px', zIndex: 1000, width: '250px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-              <h4 style={{ margin: '0 0 10px 0' }}>Show/Hide Personnel</h4>
-              <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {personnel.map(p => (
-                  <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={visibleIds.includes(p.id)}
-                      onChange={() => toggleVisibility(p.id)}
-                    />
-                    <span>{p.name}</span>
-                    <span style={{ fontSize: '0.7rem', backgroundColor: '#edf2f7', color: '#4a5568', padding: '2px 6px', borderRadius: '4px', marginLeft: 'auto', fontWeight: 500 }}>
-                      {p.type === 'pilot' ? 'Pilot' : p.type === 'crew' ? 'Crew' : 'Passenger'}
-                    </span>
-                  </label>
-                ))}
+            {isFilterOpen && (
+              <div style={{ position: 'absolute', top: '45px', right: '0', backgroundColor: 'white', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '15px', zIndex: 1000, width: '250px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+                <h4 style={{ margin: '0 0 10px 0' }}>Show/Hide Personnel</h4>
+                <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {personnel.map(p => (
+                    <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={visibleIds.includes(p.id)}
+                        onChange={() => toggleVisibility(p.id)}
+                      />
+                      <span>{p.name}</span>
+                      <span style={{ fontSize: '0.7rem', backgroundColor: '#edf2f7', color: '#4a5568', padding: '2px 6px', borderRadius: '4px', marginLeft: 'auto', fontWeight: 500 }}>
+                        {p.type === 'pilot' ? 'Pilot' : p.type === 'crew' ? 'Crew' : 'Passenger'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
