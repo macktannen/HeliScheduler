@@ -9,11 +9,23 @@ import ExpensesTab from './ExpensesTab';
 import SaveButton from './SaveButton';
 
 const getDefaultPilotForDate = (dateStr) => {
+  if (!dateStr) return '';
   try {
     const schedules = JSON.parse(localStorage.getItem('crewSchedules') || '{}');
+    let storedPilots = [];
+    try {
+      storedPilots = JSON.parse(localStorage.getItem('userPilots') || '[]');
+    } catch(e) {}
+    const allPilots = storedPilots.length > 0 ? storedPilots : mockPilots;
+    const pilotIds = new Set(allPilots.map(p => p.id));
+
+    // Find any key that ends with _dateStr and status === 'On Duty'
     for (const [key, status] of Object.entries(schedules)) {
-      if (key.endsWith(`_${dateStr}`) && status === 'On Duty') {
-        return key.split('_')[0];
+      if (key.endsWith(`_${dateStr}`) && (status === 'On Duty' || status === 'Duty/Training')) {
+        const rawPersonId = key.substring(0, key.lastIndexOf(`_${dateStr}`));
+        // Check if rawPersonId is in pilots list
+        const matchedPilot = allPilots.find(p => p.id === rawPersonId || p.name === rawPersonId);
+        if (matchedPilot) return matchedPilot.id;
       }
     }
   } catch (e) {}
@@ -647,6 +659,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
         newDate = formatInTimeZone(nextDepAbs, arrTz, 'yyyy-MM-dd');
       }
     }
+    const defaultPilot = getDefaultPilotForDate(newDate) || lastLeg.pilotId || '';
     const tempLegs = [...legs, { 
       departure: lastLeg.destination || null, 
       destination: null, 
@@ -655,7 +668,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       duration: 60, 
       distance: null, 
       passengers: [], 
-      pilotId: getDefaultPilotForDate(newDate),
+      pilotId: defaultPilot,
       date: newDate
     }];
     setLegs(recalculateLegTimes(tempLegs));
