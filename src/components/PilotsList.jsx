@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User, Save, Plus, Trash2, Users as UsersIcon } from 'lucide-react';
+import SaveButton from './SaveButton';
 import { mockPilots } from '../data';
 
 const PilotsList = () => {
@@ -7,6 +8,7 @@ const PilotsList = () => {
   const [search, setSearch] = useState('');
   const [selectedPilot, setSelectedPilot] = useState(null);
   const [editForm, setEditForm] = useState(null);
+  const [saved, setSaved] = useState(false);
 
   const loadData = () => {
     let storedPilots = [];
@@ -106,16 +108,16 @@ const PilotsList = () => {
       loadData();
       setSelectedPilot(pilotToSave);
       setEditForm({ ...pilotToSave, originalId: pilotToSave.id });
-      alert('Pilot saved successfully!');
+      setSaved(true);
     } catch (e) {
-      alert('Failed to save pilot.');
+      console.error(e);
     }
   };
 
   return (
-    <div style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 120px)' }}>
+    <div style={{ display: 'flex', gap: '20px', height: '100%', minHeight: 0, flex: 1, overflow: 'hidden' }}>
       {/* LEFT COLUMN: LIST */}
-      <div className="card" style={{ width: '350px', display: 'flex', flexDirection: 'column', padding: '15px' }}>
+      <div className="card" style={{ width: '350px', display: 'flex', flexDirection: 'column', padding: '15px', height: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <UsersIcon size={18} /> Pilots
@@ -128,7 +130,7 @@ const PilotsList = () => {
         <div style={{ position: 'relative', marginBottom: '15px' }}>
           <input 
             type="text" 
-            placeholder="Search pilots..." 
+            placeholder="Search by Name or ID..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '8px 8px 8px 30px', borderRadius: '4px', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}
@@ -156,18 +158,16 @@ const PilotsList = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <strong style={{ fontSize: '0.875rem' }}>{pilot.name}</strong>
                   <span style={{ 
-                    fontSize: '0.65rem', 
-                    padding: '2px 6px', 
-                    borderRadius: '10px',
-                    backgroundColor: pilot.status === 'Available' ? '#c6f6d5' : pilot.status === 'On Leave' ? '#fed7d7' : '#feebc8',
-                    color: pilot.status === 'Available' ? '#22543d' : pilot.status === 'On Leave' ? '#822727' : '#7b341e'
+                    fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px', 
+                    backgroundColor: pilot.status === 'Available' ? '#c6f6d5' : pilot.status === 'On Duty' ? '#feebc8' : '#fed7d7',
+                    color: pilot.status === 'Available' ? '#22543d' : pilot.status === 'On Duty' ? '#744210' : '#742a2a'
                   }}>
                     {pilot.status}
                   </span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
-                  <span>ID: {pilot.id}</span>
-                  <span>{pilot.hoursLogged} hrs</span>
+                  <span style={{ color: 'var(--primary-color)' }}>{pilot.id}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{pilot.hoursLogged || 0} hrs</span>
                 </div>
               </div>
             ))
@@ -176,7 +176,7 @@ const PilotsList = () => {
       </div>
 
       {/* RIGHT COLUMN: EDITOR */}
-      <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px', overflowY: 'auto' }}>
+      <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px', overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
         {!selectedPilot ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
             <User size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
@@ -184,118 +184,106 @@ const PilotsList = () => {
             <p style={{ fontSize: '0.875rem' }}>Click on a pilot from the left to view or edit their profile.</p>
           </div>
         ) : (
-          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px' }}>
-            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '5px' }}>
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '800px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '0px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h2 style={{ margin: 0, color: 'var(--primary-color)' }}>
-                  <input 
-                    type="text" 
-                    value={editForm.id} 
-                    onChange={(e) => setEditForm({...editForm, id: e.target.value.toUpperCase()})}
-                    style={{ fontSize: '1.5rem', fontWeight: 'bold', border: 'none', borderBottom: '2px dashed var(--border-color)', width: '150px', outline: 'none', backgroundColor: 'transparent', color: 'inherit' }}
-                    placeholder="NEW-ID"
-                    required
-                  />
+                <h2 style={{ margin: 0, color: 'var(--primary-color)', fontSize: '1.4rem' }}>
+                  {editForm.name || 'New Pilot'}
                 </h2>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Full Name</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Full Name</label>
                 <input 
                   type="text" 
                   value={editForm.name || ''} 
-                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value, id: e.target.value})}
+                  placeholder="e.g. John Smith"
                   required
-                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Status</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Status</label>
                 <select 
-                  value={editForm.status || 'Available'}
+                  value={editForm.status || 'Available'} 
                   onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
                 >
                   <option value="Available">Available</option>
-                  <option value="Duty/Training">Duty/Training</option>
+                  <option value="On Duty">On Duty</option>
+                  <option value="Off Duty">Off Duty</option>
                   <option value="On Leave">On Leave</option>
                 </select>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              {/* Contact Info */}
-              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px', border: '1px solid var(--border-color)', borderRadius: '6px', backgroundColor: 'var(--bg-color)' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)' }}>Contact Information</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Email Address</label>
-                  <input 
-                    type="email" 
-                    value={editForm.email || ''} 
-                    onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Phone Number</label>
-                  <input 
-                    type="tel" 
-                    value={editForm.phone || ''} 
-                    onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
-                  />
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Total Flight Hours Logged</label>
+                <input 
+                  type="number" 
+                  value={editForm.hoursLogged || 0} 
+                  onChange={(e) => setEditForm({...editForm, hoursLogged: parseInt(e.target.value) || 0})}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+                />
               </div>
-              
-              {/* Pilot Credentials */}
-              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)' }}>Credentials & Hours</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Total Hours</label>
-                    <input 
-                      type="number" 
-                      value={editForm.hoursLogged || 0} 
-                      onChange={(e) => setEditForm({...editForm, hoursLogged: parseInt(e.target.value) || 0})}
-                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Medical Expiration</label>
-                    <input 
-                      type="date" 
-                      value={editForm.medicalExpiration || ''} 
-                      onChange={(e) => setEditForm({...editForm, medicalExpiration: e.target.value})}
-                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Certifications / Ratings</label>
-                  <input 
-                    type="text" 
-                    value={editForm.certifications || ''} 
-                    onChange={(e) => setEditForm({...editForm, certifications: e.target.value})}
-                    placeholder="e.g. CPL, IR, CFI, NVG"
-                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
-                  />
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Medical Expiration Date</label>
+                <input 
+                  type="date" 
+                  value={editForm.medicalExpiration || ''} 
+                  onChange={(e) => setEditForm({...editForm, medicalExpiration: e.target.value})}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+                />
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--accent-color)' }}>Notes & Preferences</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Email Address</label>
+                <input 
+                  type="email" 
+                  value={editForm.email || ''} 
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Phone Number</label>
+                <input 
+                  type="tel" 
+                  value={editForm.phone || ''} 
+                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Certifications & Ratings</label>
+              <input 
+                type="text" 
+                value={editForm.certifications || ''} 
+                onChange={(e) => setEditForm({...editForm, certifications: e.target.value})}
+                placeholder="e.g. CPL, ATP, Instrument, NVG"
+                style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--accent-color)' }}>General Notes</label>
               <textarea 
                 value={editForm.notes || ''} 
                 onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
                 placeholder="e.g. Schedule preferences, training requirements..."
-                style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', minHeight: '100px', resize: 'vertical', fontSize: '0.875rem' }}
+                style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', minHeight: '60px', resize: 'vertical', fontSize: '0.85rem' }}
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', borderTop: '1px solid var(--border-color)', paddingTop: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 {!editForm.isNew && (
                   <button type="button" className="btn btn-outline" style={{ color: 'red', borderColor: 'red', display: 'flex', alignItems: 'center', gap: '5px' }} onClick={handleDelete}>
@@ -314,9 +302,9 @@ const PilotsList = () => {
                     Discard Changes
                   </button>
                 )}
-                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}>
-                  <Save size={16} /> Save Pilot
-                </button>
+                <SaveButton type="submit" triggerSave={saved}>
+                  Save Pilot
+                </SaveButton>
               </div>
             </div>
           </form>

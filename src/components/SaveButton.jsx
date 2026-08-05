@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
  *   triggerSave: boolean indicating a recent successful save (triggers animation)
  *   children: button label
  */
-const SaveButton = ({ onClick, disabled, triggerSave, children }) => {
+const SaveButton = ({ onClick, disabled, triggerSave, type = "button", children }) => {
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
@@ -32,13 +32,13 @@ const SaveButton = ({ onClick, disabled, triggerSave, children }) => {
 
   return (
     <button
-      type="button"
+      type={type}
       className="btn btn-primary"
       disabled={disabled}
       onClick={handleClick}
       style={style}
     >
-      {isSaved ? '✓ Saved!' : children}
+      {isSaved ? '✓ Saved!' : (children || 'Save')}
     </button>
   );
 };
