@@ -377,7 +377,24 @@ const LocationSelect = ({ value, onChange, label, placeholder }) => {
 const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate, hasPrev, hasNext, initialDate, flight, flightsCount }) => {
   const [isSaved, setIsSaved] = useState(false);
   
-  const initialDateStr = initialDate || (flight?.date ? flight.date.split('T')[0] : new Date().toISOString().split('T')[0]);
+  let initialDateStr = '';
+  if (initialDate instanceof Date) {
+     const y = initialDate.getFullYear();
+     const m = String(initialDate.getMonth() + 1).padStart(2, '0');
+     const d = String(initialDate.getDate()).padStart(2, '0');
+     initialDateStr = `${y}-${m}-${d}`;
+  } else if (typeof initialDate === 'string' && initialDate) {
+     initialDateStr = initialDate.split('T')[0];
+  } else if (flight?.date) {
+     initialDateStr = flight.date.split('T')[0];
+  } else {
+     const now = new Date();
+     const y = now.getFullYear();
+     const m = String(now.getMonth() + 1).padStart(2, '0');
+     const d = String(now.getDate()).padStart(2, '0');
+     initialDateStr = `${y}-${m}-${d}`;
+  }
+
   const [date, setDate] = useState(initialDateStr);
   const [flightNumber, setFlightNumber] = useState(flight?.flightNumber || `FLT-${Math.floor(Math.random() * 10000)}`);
   const [title, setTitle] = useState('');
@@ -440,7 +457,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
 
   useEffect(() => {
     if (flight) {
-      setDate(flight.date ? new Date(flight.date).toISOString().split('T')[0] : '');
+      setDate(flight.date ? flight.date.split('T')[0] : '');
       setFlightNumber(flight.flightNumber || '');
       setTitle(flight.title || '');
       setAccountId(flight.accountId || '');
@@ -468,17 +485,16 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
             distance: dist,
             passengers: l.passengers || (i === 0 && flight.passengers ? flight.passengers : []),
             pilotId: l.pilotId || (i === 0 && flight.pilotId ? flight.pilotId : ''),
-            date: l.date || (flight.date ? new Date(flight.date).toISOString().split('T')[0] : date)
+            date: l.date || (flight.date ? flight.date.split('T')[0] : initialDateStr)
           };
         });
         setLegs(mappedLegs);
       } else {
-        setLegs([{ departure: null, destination: null, takeoffTime: '08:00', landTime: '09:00', duration: 60, distance: null, passengers: [], pilotId: '', date: date }]);
+        setLegs([{ departure: null, destination: null, takeoffTime: '08:00', landTime: '09:00', duration: 60, distance: null, passengers: [], pilotId: '', date: initialDateStr }]);
       }
       setAircraftId(flight.aircraftId || '');
     } else {
-      const targetDate = initialDateStr || date;
-      if (targetDate) setDate(targetDate);
+      setDate(initialDateStr);
       setFlightNumber(flightsCount + 1);
       setTitle('');
       setAccountId('');
@@ -489,8 +505,8 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       setFlightLog({});
       setExpenses([]);
       setAircraftId('');
-      const defaultPilot = getDefaultPilotForDate(targetDate);
-      const defaultPax = getDefaultPassengersForDate(targetDate);
+      const defaultPilot = getDefaultPilotForDate(initialDateStr);
+      const defaultPax = getDefaultPassengersForDate(initialDateStr);
       setLegs([{ 
         departure: null, 
         destination: null, 
@@ -500,10 +516,10 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
         distance: null, 
         passengers: defaultPax, 
         pilotId: defaultPilot, 
-        date: targetDate 
+        date: initialDateStr 
       }]);
     }
-  }, [flight, initialDate, initialDateStr, flightsCount]);
+  }, [flight, initialDateStr, flightsCount]);
 
   if (!isOpen) return null;
 
