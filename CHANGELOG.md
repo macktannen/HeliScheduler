@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.19] - 2026-08-05
+
+### Added
+- **Auto-Fill Date, On-Duty Pilot & On-Duty Crew Passengers**: When clicking a calendar day to create a flight card:
+  - Leg dates automatically match the clicked calendar date.
+  - The pilot defaults to the scheduled on-duty pilot for that date.
+  - Passengers automatically default to any crew/passengers marked as on-duty on that date.
+
+---
+
 ## [v0.1.18] - 2026-08-05
 
 ### Fixed

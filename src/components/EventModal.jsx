@@ -17,7 +17,6 @@ const getDefaultPilotForDate = (dateStr) => {
       storedPilots = JSON.parse(localStorage.getItem('userPilots') || '[]');
     } catch(e) {}
     const allPilots = storedPilots.length > 0 ? storedPilots : mockPilots;
-    const pilotIds = new Set(allPilots.map(p => p.id));
 
     // Find any key that ends with _dateStr and status === 'On Duty'
     for (const [key, status] of Object.entries(schedules)) {
@@ -30,6 +29,30 @@ const getDefaultPilotForDate = (dateStr) => {
     }
   } catch (e) {}
   return '';
+};
+
+const getDefaultPassengersForDate = (dateStr) => {
+  if (!dateStr) return [];
+  try {
+    const schedules = JSON.parse(localStorage.getItem('crewSchedules') || '{}');
+    let storedPax = [];
+    try {
+      storedPax = JSON.parse(localStorage.getItem('userPassengers') || '[]');
+    } catch(e) {}
+    
+    const onDutyPax = [];
+    for (const [key, status] of Object.entries(schedules)) {
+      if (key.endsWith(`_${dateStr}`) && (status === 'On Duty' || status === 'Duty/Training')) {
+        const rawPersonId = key.substring(0, key.lastIndexOf(`_${dateStr}`));
+        const matchedPax = storedPax.find(p => p.id === rawPersonId || p.name === rawPersonId);
+        if (matchedPax) {
+          onDutyPax.push(matchedPax.id);
+        }
+      }
+    }
+    return onDutyPax;
+  } catch (e) {}
+  return [];
 };
 
 // --- CUSTOM ZONE CREATION MODAL ---
@@ -454,7 +477,8 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       }
       setAircraftId(flight.aircraftId || '');
     } else {
-      if (initialDate) setDate(initialDate.toISOString().split('T')[0]);
+      const targetDate = initialDateStr || date;
+      if (targetDate) setDate(targetDate);
       setFlightNumber(flightsCount + 1);
       setTitle('');
       setAccountId('');
@@ -465,9 +489,21 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       setFlightLog({});
       setExpenses([]);
       setAircraftId('');
-      setLegs([{ departure: null, destination: null, takeoffTime: '08:00', landTime: '09:00', duration: 60, distance: null, passengers: [], pilotId: getDefaultPilotForDate(initialDateStr), date: initialDateStr }]);
+      const defaultPilot = getDefaultPilotForDate(targetDate);
+      const defaultPax = getDefaultPassengersForDate(targetDate);
+      setLegs([{ 
+        departure: null, 
+        destination: null, 
+        takeoffTime: '08:00', 
+        landTime: '09:00', 
+        duration: 60, 
+        distance: null, 
+        passengers: defaultPax, 
+        pilotId: defaultPilot, 
+        date: targetDate 
+      }]);
     }
-  }, [flight, initialDate, flightsCount]);
+  }, [flight, initialDate, initialDateStr, flightsCount]);
 
   if (!isOpen) return null;
 
@@ -660,6 +696,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       }
     }
     const defaultPilot = getDefaultPilotForDate(newDate) || lastLeg.pilotId || '';
+    const defaultPax = getDefaultPassengersForDate(newDate);
     const tempLegs = [...legs, { 
       departure: lastLeg.destination || null, 
       destination: null, 
@@ -667,7 +704,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       landTime: '', 
       duration: 60, 
       distance: null, 
-      passengers: [], 
+      passengers: defaultPax.length > 0 ? defaultPax : (lastLeg.passengers || []), 
       pilotId: defaultPilot,
       date: newDate
     }];
