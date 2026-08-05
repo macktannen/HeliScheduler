@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PilotsList from './PilotsList';
+import CrewList from './CrewList';
 import PassengersList from './PassengersList';
 import CrewSchedule from './CrewSchedule';
 
@@ -22,6 +23,12 @@ const CrewView = () => {
           Pilots Directory
         </button>
         <button 
+          className={`btn ${activeSubTab === 'crew' ? 'btn-primary' : 'btn-outline'}`}
+          onClick={() => setActiveSubTab('crew')}
+        >
+          Crew Directory
+        </button>
+        <button 
           className={`btn ${activeSubTab === 'passengers' ? 'btn-primary' : 'btn-outline'}`}
           onClick={() => setActiveSubTab('passengers')}
         >
@@ -32,6 +39,7 @@ const CrewView = () => {
       <div style={{ flex: '1', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {activeSubTab === 'schedule' && <CrewSchedule />}
         {activeSubTab === 'pilots' && <PilotsList />}
+        {activeSubTab === 'crew' && <CrewList />}
         {activeSubTab === 'passengers' && <PassengersList />}
       </div>
     </div>

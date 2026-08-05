@@ -1,43 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, Users, Briefcase, HeartPulse } from 'lucide-react';
+import { Search, Plus, Trash2, Users, Briefcase, HeartPulse, UserCheck } from 'lucide-react';
 import SaveButton from './SaveButton';
 
-const PassengersList = () => {
-  const [passengers, setPassengers] = useState([]);
+const CrewList = () => {
+  const [crewMembers, setCrewMembers] = useState([]);
   const [search, setSearch] = useState('');
-  const [selectedPassenger, setSelectedPassenger] = useState(null);
+  const [selectedCrew, setSelectedCrew] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [saved, setSaved] = useState(false);
 
   const loadData = () => {
     let storedPassengers = [];
     try {
-      storedPassengers = JSON.parse(localStorage.getItem('userPassengers'));
-      if (!storedPassengers) {
-        // Seed with a mock passenger
-        storedPassengers = [{
-          id: 'PAX-0001',
-          name: 'Jane VIP',
-          weight: 155,
-          email: 'jane.vip@company.com',
-          phone: '(555) 987-6543',
-          company: 'Acme Corp',
-          title: 'CEO',
-          isCrew: false,
-          emergencyContact: 'John Doe - 555-123-9999',
-          medicalNotes: 'No allergies.',
-          notes: 'Prefers window seat.'
-        }];
-        localStorage.setItem('userPassengers', JSON.stringify(storedPassengers));
-      }
+      storedPassengers = JSON.parse(localStorage.getItem('userPassengers')) || [];
     } catch (e) {
       console.error(e);
       storedPassengers = [];
     }
 
-    // Sort by name
-    storedPassengers.sort((a, b) => a.name.localeCompare(b.name));
-    setPassengers(storedPassengers);
+    // Filter only personnel marked with isCrew: true
+    const crewOnly = storedPassengers.filter(p => p.isCrew);
+    crewOnly.sort((a, b) => a.name.localeCompare(b.name));
+    setCrewMembers(crewOnly);
   };
 
   useEffect(() => {
@@ -46,36 +30,35 @@ const PassengersList = () => {
     return () => window.removeEventListener('storage', loadData);
   }, []);
 
-  const filteredPassengers = passengers
-    .filter(p => !p.isCrew)
-    .filter(p => 
-      p.name.toLowerCase().includes(search.toLowerCase()) || 
-      p.id.toLowerCase().includes(search.toLowerCase()) ||
-      (p.company && p.company.toLowerCase().includes(search.toLowerCase()))
-    );
+  const filteredCrew = crewMembers.filter(c => 
+    c.name.toLowerCase().includes(search.toLowerCase()) || 
+    c.id.toLowerCase().includes(search.toLowerCase()) ||
+    (c.company && c.company.toLowerCase().includes(search.toLowerCase())) ||
+    (c.title && c.title.toLowerCase().includes(search.toLowerCase()))
+  );
 
-  const handleSelect = (pax) => {
-    setSelectedPassenger(pax);
-    setEditForm({ ...pax, originalId: pax.id });
+  const handleSelect = (member) => {
+    setSelectedCrew(member);
+    setEditForm({ ...member, originalId: member.id });
   };
 
   const handleAddNew = () => {
-    const newPassenger = {
-      id: 'New Passenger',
-      name: 'New Passenger',
+    const newCrew = {
+      id: 'New Crew Member',
+      name: 'New Crew Member',
       weight: 180,
       email: '',
       phone: '',
       company: '',
-      title: '',
+      title: 'Crew Member',
       emergencyContact: '',
       medicalNotes: '',
       notes: '',
-      isCrew: false,
+      isCrew: true,
       isNew: true
     };
-    setSelectedPassenger(newPassenger);
-    setEditForm(newPassenger);
+    setSelectedCrew(newCrew);
+    setEditForm(newCrew);
   };
 
   const handleDelete = () => {
@@ -83,13 +66,13 @@ const PassengersList = () => {
     if (!window.confirm(`Are you sure you want to delete ${editForm.name}?`)) return;
     try {
       const storedPassengers = JSON.parse(localStorage.getItem('userPassengers') || '[]');
-      const updatedPassengers = storedPassengers.filter(p => p.id !== editForm.originalId && p.id !== editForm.id);
-      localStorage.setItem('userPassengers', JSON.stringify(updatedPassengers));
+      const updated = storedPassengers.filter(p => p.id !== editForm.originalId && p.id !== editForm.id);
+      localStorage.setItem('userPassengers', JSON.stringify(updated));
       loadData();
-      setSelectedPassenger(null);
+      setSelectedCrew(null);
       setEditForm(null);
     } catch (e) {
-      alert('Failed to delete passenger.');
+      alert('Failed to delete crew member.');
     }
   };
 
@@ -100,24 +83,30 @@ const PassengersList = () => {
     try {
       const storedPassengers = JSON.parse(localStorage.getItem('userPassengers') || '[]');
       
-      const paxToSave = { ...editForm };
-      const originalId = paxToSave.originalId || paxToSave.id;
-      delete paxToSave.isNew;
-      delete paxToSave.originalId;
+      const itemToSave = { ...editForm };
+      const originalId = itemToSave.originalId || itemToSave.id;
+      delete itemToSave.isNew;
+      delete itemToSave.originalId;
 
       const existingIndex = storedPassengers.findIndex(p => p.id === originalId);
 
       if (existingIndex >= 0) {
-        storedPassengers[existingIndex] = paxToSave;
+        storedPassengers[existingIndex] = itemToSave;
       } else {
-        storedPassengers.push(paxToSave);
+        storedPassengers.push(itemToSave);
       }
 
       localStorage.setItem('userPassengers', JSON.stringify(storedPassengers));
       
       loadData();
-      setSelectedPassenger(paxToSave);
-      setEditForm({ ...paxToSave, originalId: paxToSave.id });
+      if (itemToSave.isCrew) {
+        setSelectedCrew(itemToSave);
+        setEditForm({ ...itemToSave, originalId: itemToSave.id });
+      } else {
+        // If untagged as crew, deselect
+        setSelectedCrew(null);
+        setEditForm(null);
+      }
       setSaved(true);
     } catch (e) {
       console.error(e);
@@ -130,17 +119,17 @@ const PassengersList = () => {
       <div className="card" style={{ width: '350px', display: 'flex', flexDirection: 'column', padding: '15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={18} /> Passengers
+            <UserCheck size={18} /> Crew Directory
           </h3>
           <button onClick={handleAddNew} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Plus size={14} /> Add Pax
+            <Plus size={14} /> Add Crew
           </button>
         </div>
         
         <div style={{ position: 'relative', marginBottom: '15px' }}>
           <input 
             type="text" 
-            placeholder="Search by Name, ID, or Company..." 
+            placeholder="Search Crew by Name, Role..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '8px 8px 8px 30px', borderRadius: '4px', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}
@@ -149,32 +138,32 @@ const PassengersList = () => {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {filteredPassengers.length === 0 ? (
+          {filteredCrew.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '20px', fontSize: '0.875rem' }}>
-              No passengers found.
+              No crew members found. Mark "Crew Member" on a passenger to add them here.
             </div>
           ) : (
-            filteredPassengers.map(pax => (
+            filteredCrew.map(crew => (
               <div 
-                key={pax.id}
-                onClick={() => handleSelect(pax)}
+                key={crew.id}
+                onClick={() => handleSelect(crew)}
                 style={{
                   padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)',
                   cursor: 'pointer',
-                  backgroundColor: selectedPassenger?.id === pax.id ? 'var(--primary-light)' : 'white',
-                  borderLeft: selectedPassenger?.id === pax.id ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'
+                  backgroundColor: selectedCrew?.id === crew.id ? 'var(--primary-light)' : 'white',
+                  borderLeft: selectedCrew?.id === crew.id ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <strong style={{ fontSize: '0.875rem' }}>{pax.name}</strong>
+                  <strong style={{ fontSize: '0.875rem' }}>{crew.name}</strong>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {pax.weight} lbs
+                    {crew.weight} lbs
                   </span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
-                  <span style={{ color: 'var(--primary-color)' }}>{pax.id}</span>
+                  <span style={{ color: 'var(--primary-color)' }}>{crew.title || 'Crew'}</span>
                   <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {pax.company || 'No Company'}
+                    {crew.company || 'Internal'}
                   </span>
                 </div>
               </div>
@@ -185,18 +174,18 @@ const PassengersList = () => {
 
       {/* RIGHT COLUMN: EDITOR */}
       <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px', overflowY: 'auto' }}>
-        {!selectedPassenger ? (
+        {!selectedCrew ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-            <Users size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
-            <h3>Select a Passenger</h3>
-            <p style={{ fontSize: '0.875rem' }}>Click on a passenger from the left to view or edit their details.</p>
+            <UserCheck size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
+            <h3>Select a Crew Member</h3>
+            <p style={{ fontSize: '0.875rem' }}>Click on a crew member from the list to view or edit their details.</p>
           </div>
         ) : (
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px' }}>
             <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '5px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <h2 style={{ margin: 0, color: 'var(--primary-color)' }}>
-                  {editForm.name || 'New Passenger'}
+                  {editForm.name || 'New Crew Member'}
                 </h2>
               </div>
             </div>
@@ -264,7 +253,7 @@ const PassengersList = () => {
               {/* Organization Info */}
               <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
                 <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Briefcase size={16} /> Organization
+                  <Briefcase size={16} /> Organization & Role
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Company / Department</label>
@@ -323,7 +312,7 @@ const PassengersList = () => {
               <textarea 
                 value={editForm.notes || ''} 
                 onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
-                placeholder="e.g. Prefers window seat, needs headset extension..."
+                placeholder="e.g. Flight attendant, hoist operator..."
                 style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', minHeight: '80px', resize: 'vertical', fontSize: '0.875rem' }}
               />
             </div>
@@ -332,17 +321,17 @@ const PassengersList = () => {
               <div style={{ display: 'flex', gap: '10px' }}>
                 {!editForm.isNew && (
                   <button type="button" className="btn btn-outline" style={{ color: 'red', borderColor: 'red', display: 'flex', alignItems: 'center', gap: '5px' }} onClick={handleDelete}>
-                    <Trash2 size={16} /> Delete Passenger
+                    <Trash2 size={16} /> Delete Crew Member
                   </button>
                 )}
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
-                {JSON.stringify(editForm) !== JSON.stringify(selectedPassenger) && (
+                {JSON.stringify(editForm) !== JSON.stringify(selectedCrew) && (
                   <button 
                     type="button" 
                     className="btn btn-outline" 
-                    onClick={() => setEditForm({ ...selectedPassenger })}
+                    onClick={() => setEditForm({ ...selectedCrew })}
                   >
                     Discard Changes
                   </button>
@@ -357,4 +346,4 @@ const PassengersList = () => {
   );
 };
 
-export default PassengersList;
+export default CrewList;
