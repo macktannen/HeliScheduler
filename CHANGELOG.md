@@ -2,6 +2,20 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.14] - 2026-08-05
+
+### Reverted
+- Reverted v0.1.13 changes to Expenses tab fuel vendor selection and gallon input requirements as requested.
+
+---
+
+## [v0.1.13] - 2026-08-05
+
+### Changed
+- **Monday-to-Sunday Schedule Grid Week Format**: Updated `CrewSchedule.jsx` to start each weekly schedule view on Monday (`weekStartsOn: 1`) and end on Sunday instead of starting on Sunday.
+
+---
+
 ## [v0.1.12] - 2026-08-05
 
 ### Changed
