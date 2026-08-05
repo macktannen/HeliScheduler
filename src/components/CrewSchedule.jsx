@@ -51,7 +51,7 @@ const CustomStatusDropdown = ({ value, onChange }) => {
 };
 
 const CrewSchedule = () => {
-  const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
+  const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [personnel, setPersonnel] = useState([]);
   const [flights, setFlights] = useState([]);
   const [schedules, setSchedules] = useState({});
@@ -267,7 +267,7 @@ const CrewSchedule = () => {
             {format(weekDays[0], 'MMM d')} – {format(weekDays[6], 'MMM d, yyyy')}
           </h3>
           <button className="btn btn-outline" onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}><ChevronRight size={16}/></button>
-          <button className="btn btn-outline" onClick={() => setCurrentWeek(startOfWeek(new Date(), { weekStartsOn: 0 }))}>Today</button>
+          <button className="btn btn-outline" onClick={() => setCurrentWeek(startOfWeek(new Date(), { weekStartsOn: 1 }))}>Today</button>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', position: 'relative' }}>
