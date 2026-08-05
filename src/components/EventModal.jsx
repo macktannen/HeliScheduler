@@ -374,7 +374,7 @@ const LocationSelect = ({ value, onChange, label, placeholder }) => {
 
 
 // --- EVENT MODAL ---
-const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate, hasPrev, hasNext, initialDate, flight, flightsCount }) => {
+const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate, hasPrev, hasNext, initialDate, flight, flightsCount, defaultActiveView = 'Plan' }) => {
   const [isSaved, setIsSaved] = useState(false);
   
   let initialDateStr = '';
@@ -405,7 +405,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
   const [status, setStatus] = useState('on hold');
   const [tag, setTag] = useState('');
   
-  const [activeView, setActiveView] = useState('Plan'); // 'Plan' or 'Log' or 'Expenses'
+  const [activeView, setActiveView] = useState(defaultActiveView || 'Plan'); // 'Plan' or 'Log' or 'Expenses'
   const [flightLog, setFlightLog] = useState({});
   const [expenses, setExpenses] = useState([]);
 
@@ -456,6 +456,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
   const [draggableLegIndex, setDraggableLegIndex] = useState(null);
 
   useEffect(() => {
+    setActiveView(defaultActiveView || 'Plan');
     if (flight) {
       setDate(flight.date ? flight.date.split('T')[0] : '');
       setFlightNumber(flight.flightNumber || '');
@@ -519,7 +520,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
         date: initialDateStr 
       }]);
     }
-  }, [flight, initialDateStr, flightsCount]);
+  }, [flight, initialDateStr, flightsCount, defaultActiveView]);
 
   if (!isOpen) return null;
 

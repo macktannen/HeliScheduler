@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { DollarSign, Search, Calendar, FileText, Building, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { mockVendors } from '../data';
+import EventModal from './EventModal';
 
 const getCategoryColor = (category) => {
   if (!category) return { bg: '#edf2f7', text: '#4a5568' };
@@ -31,6 +32,10 @@ const ExpensesPage = () => {
   const [expenses, setExpenses] = useState([]);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  
+  // Modal State for Flight Card
+  const [selectedFlight, setSelectedFlight] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Sorting
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -47,8 +52,7 @@ const ExpensesPage = () => {
   const [editingVendorId, setEditingVendorId] = useState(null);
   const [editForm, setEditForm] = useState({ vendorId: '', name: '', category: '', address: '', phone: '', email: '', poc: '' });
 
-  useEffect(() => {
-    // Load Expenses
+  const loadExpensesData = () => {
     try {
       const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
       let allExpenses = [];
@@ -69,6 +73,10 @@ const ExpensesPage = () => {
       allExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
       setExpenses(allExpenses);
     } catch (e) { console.error("Error loading expenses", e); }
+  };
+
+  useEffect(() => {
+    loadExpensesData();
 
     // Load Vendors
     try {
@@ -77,6 +85,30 @@ const ExpensesPage = () => {
       else setVendors(mockVendors);
     } catch(e) { setVendors(mockVendors); }
   }, []);
+
+  const handleOpenFlightCard = (exp) => {
+    try {
+      const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+      const flight = storedFlights.find(f => String(f.id) === String(exp.flightId));
+      if (flight) {
+        setSelectedFlight(flight);
+        setIsModalOpen(true);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveFlight = (flightData) => {
+    try {
+      const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+      const updatedFlights = storedFlights.map(f => f.id === flightData.id ? flightData : f);
+      localStorage.setItem('userFlights', JSON.stringify(updatedFlights));
+      loadExpensesData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const saveVendors = (newVendors) => {
     setVendors(newVendors);
@@ -266,13 +298,13 @@ const ExpensesPage = () => {
                 <tbody>
                   {filteredExpenses.length === 0 ? (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                         No expenses found matching your criteria.
                       </td>
                     </tr>
                   ) : (
                     sortedExpenses.map((exp, i) => (
-                      <tr key={`${exp.id}-${i}`}>
+                      <tr key={`${exp.id}-${i}`} onClick={() => handleOpenFlightCard(exp)} style={{ cursor: 'pointer' }}>
                         <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Calendar size={14} color="var(--text-muted)" />
@@ -302,7 +334,7 @@ const ExpensesPage = () => {
                           </span>
                         </td>
                         <td style={{ padding: '12px' }}>{exp.description || '-'}</td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <td style={{ padding: '12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                           <input 
                             type="checkbox" 
                             checked={exp.isPaid || false} 
@@ -338,14 +370,12 @@ const ExpensesPage = () => {
             <table className="data-table" style={{ width: '100%', minWidth: '1000px' }}>
               <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
                 <tr>
-                  <th style={{ padding: '12px', width: '10%' }}>Vendor ID</th>
-                  <th style={{ padding: '12px', width: '15%' }}>Vendor Name</th>
-                  <th style={{ padding: '12px', width: '15%' }}>Point of Contact</th>
-                  <th style={{ padding: '12px', width: '12%' }}>Phone</th>
-                  <th style={{ padding: '12px', width: '15%' }}>Email</th>
-                  <th style={{ padding: '12px', width: '15%' }}>Address</th>
-                  <th style={{ padding: '12px', width: '10%' }}>Category</th>
-                  <th style={{ padding: '12px', textAlign: 'right', width: '8%' }}>Actions</th>
+                  <th style={{ padding: '12px' }}>Vendor ID</th>
+                  <th style={{ padding: '12px' }}>Vendor Name</th>
+                  <th style={{ padding: '12px' }}>Category</th>
+                  <th style={{ padding: '12px' }}>Address</th>
+                  <th style={{ padding: '12px' }}>Contact Details</th>
+                  <th style={{ padding: '12px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -467,6 +497,28 @@ const ExpensesPage = () => {
             </table>
           </div>
         </div>
+      )}
+      {isModalOpen && selectedFlight && (
+        <EventModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedFlight(null);
+          }}
+          onSave={handleSaveFlight}
+          onDelete={(flightId) => {
+            try {
+              const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+              const updatedFlights = storedFlights.filter(f => f.id !== flightId);
+              localStorage.setItem('userFlights', JSON.stringify(updatedFlights));
+              setIsModalOpen(false);
+              setSelectedFlight(null);
+              loadExpensesData();
+            } catch (e) { console.error(e); }
+          }}
+          flight={selectedFlight}
+          defaultActiveView="Expenses"
+        />
       )}
     </div>
   );
