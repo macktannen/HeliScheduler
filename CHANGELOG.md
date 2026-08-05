@@ -2,6 +2,14 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.18] - 2026-08-05
+
+### Fixed
+- **Hide Unknown Deleted Personnel Badges on Calendar**: Updated `CalendarView.jsx` to filter out schedule entries for personnel who no longer exist in the pilots or passenger/crew directories.
+- **Schedule Storage Cleanup on Delete**: Updated `PilotsList.jsx`, `PassengersList.jsx`, and `CrewList.jsx` to automatically remove all schedule keys associated with deleted personnel from `crewSchedules` upon deletion.
+
+---
+
 ## [v0.1.17] - 2026-08-05
 
 ### Added

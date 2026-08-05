@@ -441,9 +441,10 @@ const CalendarView = () => {
                    if (dateStr !== dayStr) return null;
                    
                    const status = crewSchedules[key];
-                   const pilot = pilotsList.find(p => String(p.id) === String(pId));
-                   const pax = passengersList.find(p => String(p.id) === String(pId));
-                   const name = pilot ? pilot.name : (pax ? pax.name : 'Unknown');
+                   const pilot = pilotsList.find(p => String(p.id) === String(pId) || p.name === pId);
+                   const pax = passengersList.find(p => String(p.id) === String(pId) || p.name === pId);
+                   if (!pilot && !pax) return null;
+                   const name = pilot ? pilot.name : pax.name;
                    
                    const LEGEND = {
                      'Note': '#f59e0b', 

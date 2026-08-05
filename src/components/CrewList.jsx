@@ -68,6 +68,20 @@ const CrewList = () => {
       const storedPassengers = JSON.parse(localStorage.getItem('userPassengers') || '[]');
       const updated = storedPassengers.filter(p => p.id !== editForm.originalId && p.id !== editForm.id);
       localStorage.setItem('userPassengers', JSON.stringify(updated));
+
+      const targetId = editForm.originalId || editForm.id;
+      const schedules = JSON.parse(localStorage.getItem('crewSchedules') || '{}');
+      let changed = false;
+      Object.keys(schedules).forEach(k => {
+        if (k.startsWith(`${targetId}_`) || k.startsWith(`${editForm.name}_`)) {
+          delete schedules[k];
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem('crewSchedules', JSON.stringify(schedules));
+      }
+
       loadData();
       setSelectedCrew(null);
       setEditForm(null);
