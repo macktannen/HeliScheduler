@@ -707,8 +707,10 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       expenses
     });
     
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 1500);
+    setIsSaved(false);
+    setTimeout(() => {
+      setIsSaved(true);
+    }, 50);
   };
 
   const isValidRoute = legs.every(l => l.departure !== null && l.destination !== null);

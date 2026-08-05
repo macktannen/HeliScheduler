@@ -2,6 +2,13 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.16] - 2026-08-05
+
+### Fixed
+- **Flight Card Save Animation & Re-Save**: Updated `handleSubmit` in `EventModal.jsx` to reset and re-trigger `isSaved` state on every save click, guaranteeing that the green checkmark animation plays correctly on every single save action.
+
+---
+
 ## [v0.1.15] - 2026-08-05
 
 ### Changed
