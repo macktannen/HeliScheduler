@@ -129,29 +129,64 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
     }
   }, [viewingExpId]);
   
-  const categoryFrequencies = useMemo(() => {
-    const freqs = {};
-    (expenses || []).forEach(e => {
-      if (e.category) {
-        freqs[e.category] = (freqs[e.category] || 0) + 1;
-      }
+  // Global expense frequencies across all saved flights plus current local expenses
+  const expenseFrequencies = useMemo(() => {
+    const freqs = { vendor: {}, category: {}, payer: {}, fuelType: {} };
+    let allStoredExpenses = [];
+    try {
+      const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+      storedFlights.forEach(f => {
+        if (f.expenses && Array.isArray(f.expenses)) {
+          allStoredExpenses.push(...f.expenses);
+        }
+      });
+    } catch(e) {}
+    
+    // Combine stored flights' expenses with local component state expenses
+    const combined = [...allStoredExpenses, ...(expenses || [])];
+    combined.forEach(e => {
+      if (e.vendor) freqs.vendor[e.vendor] = (freqs.vendor[e.vendor] || 0) + 1;
+      if (e.category) freqs.category[e.category] = (freqs.category[e.category] || 0) + 1;
+      if (e.payer) freqs.payer[e.payer] = (freqs.payer[e.payer] || 0) + 1;
+      if (e.fuelType) freqs.fuelType[e.fuelType] = (freqs.fuelType[e.fuelType] || 0) + 1;
     });
     return freqs;
   }, [expenses]);
 
-  const sortedCategories = useMemo(() => {
-    const allSet = new Set([...ALL_CATEGORIES, ...Object.keys(categoryFrequencies)]);
-    const categories = Array.from(allSet);
-    categories.sort((a, b) => {
-      const freqA = categoryFrequencies[a] || 0;
-      const freqB = categoryFrequencies[b] || 0;
+  // Helper to sort items by frequency (descending) then name (alphabetical ascending)
+  const sortByUsageThenAlpha = (items, freqMap, getName = (item) => item) => {
+    return [...items].sort((a, b) => {
+      const nameA = getName(a) || '';
+      const nameB = getName(b) || '';
+      const freqA = freqMap[nameA] || 0;
+      const freqB = freqMap[nameB] || 0;
       if (freqB !== freqA) {
         return freqB - freqA;
       }
-      return a.localeCompare(b);
+      return nameA.localeCompare(nameB);
     });
-    return categories;
-  }, [categoryFrequencies]);
+  };
+
+  const sortedCategories = useMemo(() => {
+    const allSet = new Set([...ALL_CATEGORIES, ...Object.keys(expenseFrequencies.category)]);
+    return sortByUsageThenAlpha(Array.from(allSet), expenseFrequencies.category);
+  }, [expenseFrequencies]);
+
+  const sortedVendors = useMemo(() => {
+    return sortByUsageThenAlpha(vendorsList || [], expenseFrequencies.vendor, v => v.vendorId || v.name);
+  }, [vendorsList, expenseFrequencies]);
+
+  const sortedPayers = useMemo(() => {
+    const defaultPayers = ['Avcard', 'Avfuel', 'World Fuel', 'Direct Bill', 'Titan', 'Company Card', 'Personal Card', 'Other'];
+    const allSet = new Set([...defaultPayers, ...Object.keys(expenseFrequencies.payer)]);
+    return sortByUsageThenAlpha(Array.from(allSet), expenseFrequencies.payer);
+  }, [expenseFrequencies]);
+
+  const sortedFuelTypes = useMemo(() => {
+    const defaultFuelTypes = ['Avfuel', 'AEG', 'Atlantic', 'Everest', 'EVO', 'FBO', 'Phillip66', 'Signature', 'Titan', 'World Fuel', 'CAA', 'Other'];
+    const allSet = new Set([...defaultFuelTypes, ...Object.keys(expenseFrequencies.fuelType)]);
+    return sortByUsageThenAlpha(Array.from(allSet), expenseFrequencies.fuelType);
+  }, [expenseFrequencies]);
 
   const flightAirports = useMemo(() => {
     const apts = new Set();
@@ -292,7 +327,7 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                       style={getStyle(exp, 'vendor', { width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.75rem' })}
                     >
                       <option value="">Vendor</option>
-                      {vendorsList.map(v => (
+                      {sortedVendors.map(v => (
                         <option key={v.id} value={v.vendorId || v.name}>{v.vendorId || v.name}</option>
                       ))}
                     </select>
@@ -308,14 +343,9 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                   <td style={tdStyle}>
                     <select value={exp.payer || ''} onChange={e => handleUpdate(exp.id, 'payer', e.target.value)} style={{ ...inputStyle, color: exp.payer ? 'inherit' : '#a0aec0' }}>
                       <option value="" disabled>Select Payment</option>
-                      <option value="Avcard">Avcard</option>
-                      <option value="Avfuel">Avfuel</option>
-                      <option value="World Fuel">World Fuel</option>
-                      <option value="Direct Bill">Direct Bill</option>
-                      <option value="Titan">Titan</option>
-                      <option value="Company Card">Company Card</option>
-                      <option value="Personal Card">Personal Card</option>
-                      <option value="Other">Other</option>
+                      {sortedPayers.map(pOpt => (
+                        <option key={pOpt} value={pOpt}>{pOpt}</option>
+                      ))}
                     </select>
                   </td>
                   <td style={tdStyle}>
@@ -329,18 +359,9 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                   <td style={tdStyle}>
                     <select value={exp.fuelType || ''} onChange={e => handleUpdate(exp.id, 'fuelType', e.target.value)} style={{ ...inputStyle, color: exp.fuelType ? 'inherit' : '#a0aec0' }}>
                       <option value="">-- Select Fuel --</option>
-                      <option value="Avfuel">Avfuel</option>
-                      <option value="AEG">AEG</option>
-                      <option value="Atlantic">Atlantic</option>
-                      <option value="Everest">Everest</option>
-                      <option value="EVO">EVO</option>
-                      <option value="FBO">FBO</option>
-                      <option value="Phillip66">Phillip66</option>
-                      <option value="Signature">Signature</option>
-                      <option value="Titan">Titan</option>
-                      <option value="World Fuel">World Fuel</option>
-                      <option value="CAA">CAA</option>
-                      <option value="Other">Other</option>
+                      {sortedFuelTypes.map(fOpt => (
+                        <option key={fOpt} value={fOpt}>{fOpt}</option>
+                      ))}
                     </select>
                   </td>
                   <td style={tdStyle}>

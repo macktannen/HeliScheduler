@@ -2,6 +2,13 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.22] - 2026-08-06
+
+### Changed
+- **Expenses Dropdowns Usage & Alphabetical Sorting**: Updated the **Vendor**, **Category**, **Payment**, and **Fuel** dropdown menus on the Flight Card Expenses tab to calculate historical usage frequency across saved flights. Dropdown options now order by frequency (most used first) and then alphabetically.
+
+---
+
 ## [v0.1.21] - 2026-08-05
 
 ### Added
