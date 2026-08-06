@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.30] - 2026-08-06
+
+### Added
+- **Expanded Expenses & Vendor Permissions for Coordinator & Pilot Roles**:
+  - Granted full access to **Coordinator** and **Pilot** roles to manage flight expenses (add, edit, delete, mark paid/unpaid).
+  - Granted full access to **Coordinator** and **Pilot** roles for **Vendor Management** (add, edit, and delete vendor records in the vendor database).
+  - Enabled access to the **Expenses Page** and **Expenses Tab** for both roles.
+
+---
+
 ## [v0.1.29] - 2026-08-06
 
 ### Added

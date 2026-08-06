@@ -74,10 +74,12 @@ const PERMISSIONS = {
     signLog: true,        // own assigned flight only
     clearSignLog: true,   // own assigned flight only, within 24h
     viewFlightLog: true,
-    // Expenses — own assigned flights only
+    // Expenses — full access to expenses & vendor management
     viewExpenses: true,
-    addExpense: true,     // own assigned flight only
-    editOwnExpense: true, // own assigned flight only
+    addExpense: true,
+    editExpense: true,
+    deleteExpense: true,
+    manageVendors: true,
     viewExpensesOverview: true,
     // Crew
     viewScheduleGrid: true,
