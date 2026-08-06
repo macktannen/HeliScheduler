@@ -368,12 +368,12 @@ const AircraftList = () => {
                   {editForm.dualEngine && (
                     <>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#2b6cb0' }}>Engine 2 Hours</label>
-                        <input type="number" step="0.1" value={editForm.engine2Hours || 0} onChange={(e) => setEditForm({...editForm, engine2Hours: parseFloat(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: canEditMeters ? '#ebf8ff' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
+                        <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine 2 Hours</label>
+                        <input type="number" step="0.1" value={editForm.engine2Hours || 0} onChange={(e) => setEditForm({...editForm, engine2Hours: parseFloat(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMeters ? 'white' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#2b6cb0' }}>Engine 2 Cycles</label>
-                        <input type="number" value={editForm.engine2Cycles || 0} onChange={(e) => setEditForm({...editForm, engine2Cycles: parseInt(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: canEditMeters ? '#ebf8ff' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
+                        <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine 2 Cycles</label>
+                        <input type="number" value={editForm.engine2Cycles || 0} onChange={(e) => setEditForm({...editForm, engine2Cycles: parseInt(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMeters ? 'white' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                       </div>
                     </>
                   )}

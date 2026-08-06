@@ -191,7 +191,7 @@ const SettingsView = () => {
 
               {/* View Only toggle: all flights vs own flights */}
               {(isViewOnly || currentUserRoles.includes('view_only')) && (
-                <div style={{ padding: '12px', backgroundColor: '#ebf8ff', borderRadius: '6px', border: '1px solid #bee3f8' }}>
+                <div style={{ padding: '12px', backgroundColor: '#f7fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                   <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"

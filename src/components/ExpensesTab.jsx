@@ -428,7 +428,8 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
         <button 
           type="button" 
           onClick={handleAdd} 
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#ebf8ff', color: '#3182ce', border: '1px solid #bee3f8', borderRadius: '4px', fontWeight: 600, cursor: 'pointer' }}
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px' }}
         >
           <Plus size={16} /> Add Expense
         </button>

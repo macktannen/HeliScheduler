@@ -308,7 +308,7 @@ const PilotsList = () => {
                     })()}
                   </div>
                   {statusObj.hasFlight && (
-                    <div style={{ fontSize: '0.72rem', color: '#2b6cb0', marginTop: '4px', fontWeight: 500 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--primary-color)', marginTop: '4px', fontWeight: 500 }}>
                       ✈️ {statusObj.flightText}
                     </div>
                   )}
@@ -373,13 +373,13 @@ const PilotsList = () => {
                           {statusObj.dutyStatus}
                         </span>
                         {statusObj.hasFlight && (
-                          <span style={{ fontSize: '0.75rem', backgroundColor: '#ebf8ff', color: '#2b6cb0', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.75rem', backgroundColor: '#edf2f7', color: 'var(--primary-color)', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
                             Flight Scheduled
                           </span>
                         )}
                       </div>
                       {statusObj.hasFlight ? (
-                        <div style={{ fontSize: '0.78rem', color: '#2b6cb0', marginTop: '2px', fontWeight: 500 }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--primary-color)', marginTop: '2px', fontWeight: 500 }}>
                           ✈️ {statusObj.flightText}
                         </div>
                       ) : (

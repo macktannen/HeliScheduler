@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.32] - 2026-08-06
+
+### Changed
+- **Unified Layout Color Palette**:
+  - Removed blue text (`#2b6cb0`) and blue background shading (`#ebf8ff`, `#bee3f8`) across `AircraftList.jsx`, `FlightLogTab.jsx`, `PilotsList.jsx`, `SettingsView.jsx`, `ExpensesTab.jsx`, and `ExpensesPage.jsx`.
+  - Restored standard table input backgrounds, default dark text, and theme primary / neutral background styling for full design consistency.
+
+---
+
 ## [v0.1.31] - 2026-08-06
 
 ### Added

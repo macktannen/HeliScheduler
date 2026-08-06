@@ -229,10 +229,10 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
 
               {isTwin ? (
                 <>
-                  <th style={{ padding: '2px 4px', color: '#2b6cb0' }}>Eng 1 (Hrs)</th>
-                  <th style={{ padding: '2px 4px', color: '#2b6cb0' }}>Eng 2 (Hrs)</th>
-                  <th style={{ padding: '2px 4px', color: '#2b6cb0' }}>Eng 1 Cyc</th>
-                  <th style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px', color: '#2b6cb0' }}>Eng 2 Cyc</th>
+                  <th style={{ padding: '2px 4px' }}>Eng 1 (Hrs)</th>
+                  <th style={{ padding: '2px 4px' }}>Eng 2 (Hrs)</th>
+                  <th style={{ padding: '2px 4px' }}>Eng 1 Cyc</th>
+                  <th style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px' }}>Eng 2 Cyc</th>
                 </>
               ) : (
                 <th style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px' }}>Engine Cycles</th>
@@ -256,16 +256,16 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
                    {isTwin ? (
                      <>
                        <td style={{ padding: '2px 4px' }}>
-                         <input type="number" step="0.1" value={act.engine1Hrs !== undefined ? act.engine1Hrs : ''} placeholder={act.flightHrs || '0.0'} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine1Hrs', e.target.value)} style={{ width: '45px', padding: '1px 2px', fontSize: '0.7rem', backgroundColor: '#ebf8ff' }} />
+                         <input type="number" step="0.1" value={act.engine1Hrs !== undefined ? act.engine1Hrs : ''} placeholder={act.flightHrs || '0.0'} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine1Hrs', e.target.value)} style={{ width: '45px', padding: '1px 2px', fontSize: '0.7rem' }} />
                        </td>
                        <td style={{ padding: '2px 4px' }}>
-                         <input type="number" step="0.1" value={act.engine2Hrs !== undefined ? act.engine2Hrs : ''} placeholder={act.flightHrs || '0.0'} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine2Hrs', e.target.value)} style={{ width: '45px', padding: '1px 2px', fontSize: '0.7rem', backgroundColor: '#ebf8ff' }} />
+                         <input type="number" step="0.1" value={act.engine2Hrs !== undefined ? act.engine2Hrs : ''} placeholder={act.flightHrs || '0.0'} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine2Hrs', e.target.value)} style={{ width: '45px', padding: '1px 2px', fontSize: '0.7rem' }} />
                        </td>
                        <td style={{ padding: '2px 4px' }}>
-                         <input type="number" value={act.engine1Cycles !== undefined ? act.engine1Cycles : (act.engineCycles || '')} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine1Cycles', e.target.value)} style={{ width: '40px', padding: '1px 2px', fontSize: '0.7rem', backgroundColor: '#ebf8ff' }} />
+                         <input type="number" value={act.engine1Cycles !== undefined ? act.engine1Cycles : (act.engineCycles || '')} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine1Cycles', e.target.value)} style={{ width: '40px', padding: '1px 2px', fontSize: '0.7rem' }} />
                        </td>
                        <td style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px' }}>
-                         <input type="number" value={act.engine2Cycles || ''} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine2Cycles', e.target.value)} style={{ width: '40px', padding: '1px 2px', fontSize: '0.7rem', backgroundColor: '#ebf8ff' }} />
+                         <input type="number" value={act.engine2Cycles || ''} disabled={!isEditable} onChange={e => handleUpdateLeg(index, 'engine2Cycles', e.target.value)} style={{ width: '40px', padding: '1px 2px', fontSize: '0.7rem' }} />
                        </td>
                      </>
                    ) : (
@@ -294,10 +294,10 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
               <td style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px' }}>{totals.hobbs}</td>
               {isTwin ? (
                 <>
-                  <td style={{ padding: '2px 4px', color: '#2b6cb0' }}>{totals.eng1HrsTotal}</td>
-                  <td style={{ padding: '2px 4px', color: '#2b6cb0' }}>{totals.eng2HrsTotal}</td>
-                  <td style={{ padding: '2px 4px', color: '#2b6cb0' }}>{totals.cycles1}</td>
-                  <td style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px', color: '#2b6cb0' }}>{totals.cycles2}</td>
+                  <td style={{ padding: '2px 4px' }}>{totals.eng1HrsTotal}</td>
+                  <td style={{ padding: '2px 4px' }}>{totals.eng2HrsTotal}</td>
+                  <td style={{ padding: '2px 4px' }}>{totals.cycles1}</td>
+                  <td style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px' }}>{totals.cycles2}</td>
                 </>
               ) : (
                 <td style={{ borderRight: '1px solid #e2e8f0', padding: '2px 4px' }}>{totals.cycles1}</td>
@@ -339,7 +339,7 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
       <div className="card" style={{ padding: '0', overflowX: 'auto', marginBottom: '10px' }}>
         <div style={{ padding: '4px 10px', backgroundColor: '#edf2f7', borderBottom: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
           <span>Aircraft Logbook Totals {aircraftId && `(${aircraftId})`}</span>
-          {isTwin && <span style={{ color: '#2b6cb0', fontSize: '0.7rem' }}>Twin Engine Aircraft</span>}
+          {isTwin && <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Twin Engine Aircraft</span>}
         </div>
         <table className="data-table" style={{ width: '100%', fontSize: '0.75rem' }}>
           <thead>
@@ -378,13 +378,13 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
             {isTwin && (
               <>
                 <tr>
-                  <td style={{ fontWeight: 'bold', padding: '2px 4px', color: '#2b6cb0' }}>Engine 2 Hours</td>
+                  <td style={{ fontWeight: 'bold', padding: '2px 4px' }}>Engine 2 Hours</td>
                   <td style={{ padding: '2px 4px' }}>{engine2Before}</td>
                   <td style={{ padding: '2px 4px' }}>{(parseFloat(engine2Before) + changeEngine2Hours).toFixed(1)}</td>
                   <td style={{ textAlign: 'right', color: changeEngine2Hours > 0 ? 'green' : 'inherit', padding: '2px 4px' }}>+{changeEngine2Hours.toFixed(1)}</td>
                 </tr>
                 <tr>
-                  <td style={{ fontWeight: 'bold', padding: '2px 4px', color: '#2b6cb0' }}>Engine 2 Cycles</td>
+                  <td style={{ fontWeight: 'bold', padding: '2px 4px' }}>Engine 2 Cycles</td>
                   <td style={{ padding: '2px 4px' }}>{cycles2Before}</td>
                   <td style={{ padding: '2px 4px' }}>{parseInt(cycles2Before) + changeEngine2Cycles}</td>
                   <td style={{ textAlign: 'right', color: changeEngine2Cycles > 0 ? 'green' : 'inherit', padding: '2px 4px' }}>+{changeEngine2Cycles}</td>

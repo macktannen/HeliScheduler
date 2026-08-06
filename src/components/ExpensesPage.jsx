@@ -248,7 +248,7 @@ const ExpensesPage = () => {
             </div>
             
             <div className="card" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ padding: '15px', backgroundColor: '#ebf8ff', borderRadius: '50%', color: '#3182ce' }}>
+              <div style={{ padding: '15px', backgroundColor: '#edf2f7', borderRadius: '50%', color: 'var(--primary-color)' }}>
                 <FileText size={24} />
               </div>
               <div>
