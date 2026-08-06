@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import { can as permCan, isAdmin as permIsAdmin, hasRole, getUserRoles } from '../services/permissionService';
 
 const AuthContext = createContext(null);
 
@@ -8,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for existing session
     const user = authService.getCurrentUser();
     if (user) {
       setCurrentUser(user);
@@ -38,13 +38,19 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(updatedUser);
   };
 
+  // Convenience: check a permission for the current user
+  const can = (permission) => permCan(currentUser, permission);
+
   const value = {
     currentUser,
     login,
     signup,
     logout,
     updateProfile,
-    isAdmin: currentUser?.role === 'admin'
+    can,
+    isAdmin: permIsAdmin(currentUser),
+    hasRole: (role) => hasRole(currentUser, role),
+    getUserRoles: () => getUserRoles(currentUser),
   };
 
   if (loading) {

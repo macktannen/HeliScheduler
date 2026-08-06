@@ -5,10 +5,17 @@ import { Search, Save, Plus, Trash2, Plane, Wrench } from 'lucide-react';
 import SaveButton from './SaveButton';
 import { mockAircrafts } from '../data';
 import { authService } from '../services/authService';
+import { can as permCan } from '../services/permissionService';
 
 const AircraftList = () => {
   const currentUser = authService.getCurrentUser();
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = permCan(currentUser, 'all') || false;
+  const canEditMeters = permCan(currentUser, 'editMeters');
+  const canEditMaintenance = permCan(currentUser, 'editMaintenance');
+  const canEditProfile = permCan(currentUser, 'editAircraftProfile');
+  const canAddDeleteAircraft = isAdmin;
+  const canEditStatus = permCan(currentUser, 'editAircraftStatus');
+  const canEditOps = permCan(currentUser, 'editOperationalData');
 
   const [aircraft, setAircraft] = useState([]);
   const [saved, setSaved] = useState(false);
@@ -169,9 +176,11 @@ const AircraftList = () => {
           <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Plane size={18} /> Aircraft
           </h3>
-          <button onClick={handleAddNew} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Plus size={14} /> Add Aircraft
-          </button>
+          {canAddDeleteAircraft && (
+            <button onClick={handleAddNew} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Plus size={14} /> Add Aircraft
+            </button>
+          )}
         </div>
         
         <div style={{ position: 'relative', marginBottom: '15px' }}>
@@ -242,7 +251,8 @@ const AircraftList = () => {
                     type="text" 
                     value={editForm.id} 
                     onChange={(e) => setEditForm({...editForm, id: e.target.value.toUpperCase()})}
-                    style={{ fontSize: '1.5rem', fontWeight: 'bold', border: 'none', borderBottom: '2px dashed var(--border-color)', width: '150px', outline: 'none', backgroundColor: 'transparent', color: 'inherit' }}
+                    disabled={!canEditProfile}
+                    style={{ fontSize: '1.5rem', fontWeight: 'bold', border: 'none', borderBottom: '2px dashed var(--border-color)', width: '150px', outline: 'none', backgroundColor: 'transparent', color: 'inherit', cursor: canEditProfile ? 'text' : 'not-allowed' }}
                     placeholder="TAIL NUMBER"
                     required
                   />
@@ -259,7 +269,8 @@ const AircraftList = () => {
                   onChange={(e) => setEditForm({...editForm, model: e.target.value})}
                   placeholder="e.g. Bell 407, Airbus H125"
                   required
-                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                  disabled={!canEditProfile}
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditProfile ? 'white' : '#f7fafc', cursor: canEditProfile ? 'text' : 'not-allowed' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -267,7 +278,8 @@ const AircraftList = () => {
                 <select 
                   value={editForm.status || 'Available'}
                   onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                  disabled={!canEditStatus}
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditStatus ? 'white' : '#f7fafc', cursor: canEditStatus ? 'pointer' : 'not-allowed' }}
                 >
                   <option value="Available">Available</option>
                   <option value="Maintenance">Maintenance (AOG)</option>
@@ -289,7 +301,8 @@ const AircraftList = () => {
                     value={editForm.baseLocation || ''} 
                     onChange={(e) => setEditForm({...editForm, baseLocation: e.target.value})}
                     placeholder="e.g. KVPZ"
-                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                    disabled={!canEditOps}
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditOps ? 'white' : '#f7fafc', cursor: canEditOps ? 'text' : 'not-allowed' }}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -298,7 +311,8 @@ const AircraftList = () => {
                     type="number" 
                     value={editForm.maxCruiseSpeed || 120} 
                     onChange={(e) => setEditForm({...editForm, maxCruiseSpeed: parseInt(e.target.value) || 120})}
-                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                    disabled={!canEditOps}
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditOps ? 'white' : '#f7fafc', cursor: canEditOps ? 'text' : 'not-allowed' }}
                   />
                 </div>
               </div>
@@ -322,21 +336,21 @@ const AircraftList = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Aircraft Hours</label>
-                    <input type="number" step="0.1" value={editForm.totalHours || 0} onChange={(e) => setEditForm({...editForm, totalHours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                    <input type="number" step="0.1" value={editForm.totalHours || 0} onChange={(e) => setEditForm({...editForm, totalHours: parseFloat(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMeters ? 'white' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Aircraft Landings</label>
-                    <input type="number" value={editForm.landings || 0} onChange={(e) => setEditForm({...editForm, landings: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                    <input type="number" value={editForm.landings || 0} onChange={(e) => setEditForm({...editForm, landings: parseInt(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMeters ? 'white' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                   </div>
 
                   {/* Engine 1 */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine 1 Hours</label>
-                    <input type="number" step="0.1" value={editForm.engine1Hours !== undefined ? editForm.engine1Hours : (editForm.engineHours || editForm.totalHours || 0)} onChange={(e) => setEditForm({...editForm, engine1Hours: parseFloat(e.target.value) || 0, engineHours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                    <input type="number" step="0.1" value={editForm.engine1Hours !== undefined ? editForm.engine1Hours : (editForm.engineHours || editForm.totalHours || 0)} onChange={(e) => setEditForm({...editForm, engine1Hours: parseFloat(e.target.value) || 0, engineHours: parseFloat(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMeters ? 'white' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine 1 Cycles</label>
-                    <input type="number" value={editForm.engine1Cycles !== undefined ? editForm.engine1Cycles : (editForm.engineCycles || 0)} onChange={(e) => setEditForm({...editForm, engine1Cycles: parseInt(e.target.value) || 0, engineCycles: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                    <input type="number" value={editForm.engine1Cycles !== undefined ? editForm.engine1Cycles : (editForm.engineCycles || 0)} onChange={(e) => setEditForm({...editForm, engine1Cycles: parseInt(e.target.value) || 0, engineCycles: parseInt(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMeters ? 'white' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                   </div>
 
                   {/* Engine 2 (Conditional) */}
@@ -344,18 +358,18 @@ const AircraftList = () => {
                     <>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                         <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#2b6cb0' }}>Engine 2 Hours</label>
-                        <input type="number" step="0.1" value={editForm.engine2Hours || 0} onChange={(e) => setEditForm({...editForm, engine2Hours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: isAdmin ? '#ebf8ff' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                        <input type="number" step="0.1" value={editForm.engine2Hours || 0} onChange={(e) => setEditForm({...editForm, engine2Hours: parseFloat(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: canEditMeters ? '#ebf8ff' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                         <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#2b6cb0' }}>Engine 2 Cycles</label>
-                        <input type="number" value={editForm.engine2Cycles || 0} onChange={(e) => setEditForm({...editForm, engine2Cycles: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: isAdmin ? '#ebf8ff' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                        <input type="number" value={editForm.engine2Cycles || 0} onChange={(e) => setEditForm({...editForm, engine2Cycles: parseInt(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: canEditMeters ? '#ebf8ff' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                       </div>
                     </>
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', gridColumn: editForm.dualEngine ? 'span 2' : 'span 1' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Hobbs Meter</label>
-                    <input type="number" step="0.1" value={editForm.hobbs || 0} onChange={(e) => setEditForm({...editForm, hobbs: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                    <input type="number" step="0.1" value={editForm.hobbs || 0} onChange={(e) => setEditForm({...editForm, hobbs: parseFloat(e.target.value) || 0})} disabled={!canEditMeters} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMeters ? 'white' : '#f7fafc', cursor: canEditMeters ? 'text' : 'not-allowed' }} />
                   </div>
                 </div>
               </div>
@@ -372,7 +386,8 @@ const AircraftList = () => {
                       type="date" 
                       value={editForm.lastInspection || ''} 
                       onChange={(e) => setEditForm({...editForm, lastInspection: e.target.value})}
-                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                      disabled={!canEditMaintenance}
+                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMaintenance ? 'white' : '#f7fafc', cursor: canEditMaintenance ? 'text' : 'not-allowed' }}
                     />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -381,7 +396,8 @@ const AircraftList = () => {
                       type="date" 
                       value={editForm.nextInspection || ''} 
                       onChange={(e) => setEditForm({...editForm, nextInspection: e.target.value})}
-                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                      disabled={!canEditMaintenance}
+                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditMaintenance ? 'white' : '#f7fafc', cursor: canEditMaintenance ? 'text' : 'not-allowed' }}
                     />
                   </div>
                 </div>
@@ -394,7 +410,8 @@ const AircraftList = () => {
                 value={editForm.notes || ''} 
                 onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
                 placeholder="e.g. Avionics update required on next inspection..."
-                style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', minHeight: '100px', resize: 'vertical', fontSize: '0.875rem' }}
+                disabled={!canEditMaintenance}
+                style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', minHeight: '100px', resize: 'vertical', fontSize: '0.875rem', backgroundColor: canEditMaintenance ? 'white' : '#f7fafc', cursor: canEditMaintenance ? 'text' : 'not-allowed' }}
               />
             </div>
 
@@ -411,7 +428,7 @@ const AircraftList = () => {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', borderTop: '1px solid var(--border-color)', paddingTop: '15px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
-                {!editForm.isNew && (
+                {!editForm.isNew && canAddDeleteAircraft && (
                   <button type="button" className="btn btn-outline" style={{ color: 'red', borderColor: 'red', display: 'flex', alignItems: 'center', gap: '5px' }} onClick={handleDelete}>
                     <Trash2 size={16} /> Delete Aircraft
                   </button>

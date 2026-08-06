@@ -1,26 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/authService';
+import { ROLES, ROLE_LABELS, ROLE_COLORS, getUserRoles } from '../services/permissionService';
+
+const RoleBadge = ({ role }) => {
+  const colors = ROLE_COLORS[role] || { bg: '#e2e8f0', text: '#4a5568' };
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '2px 8px',
+      borderRadius: '12px',
+      fontSize: '0.72rem',
+      fontWeight: 600,
+      backgroundColor: colors.bg,
+      color: colors.text,
+      marginRight: '4px',
+      marginBottom: '2px',
+    }}>
+      {ROLE_LABELS[role] || role}
+    </span>
+  );
+};
+
+const RoleCheckboxGroup = ({ value = [], onChange, disabled = false }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+    {ROLES.map(role => (
+      <label key={role} style={{
+        display: 'flex', alignItems: 'center', gap: '6px', cursor: disabled ? 'not-allowed' : 'pointer',
+        padding: '5px 10px', borderRadius: '6px', border: `1px solid ${value.includes(role) ? ROLE_COLORS[role].text : 'var(--border-color)'}`,
+        backgroundColor: value.includes(role) ? ROLE_COLORS[role].bg : 'white',
+        opacity: disabled ? 0.6 : 1, fontSize: '0.82rem', fontWeight: 500,
+        color: value.includes(role) ? ROLE_COLORS[role].text : 'var(--text-color)',
+      }}>
+        <input
+          type="checkbox"
+          disabled={disabled}
+          checked={value.includes(role)}
+          onChange={e => {
+            if (e.target.checked) onChange([...value, role]);
+            else onChange(value.filter(r => r !== role));
+          }}
+          style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
+        />
+        {ROLE_LABELS[role]}
+      </label>
+    ))}
+  </div>
+);
 
 const SettingsView = () => {
   const { currentUser, isAdmin, updateProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('account');
   const [users, setUsers] = useState([]);
-  
+
   const [name, setName] = useState(currentUser?.name || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [notifications, setNotifications] = useState(currentUser?.notifications ?? true);
-  
+  const [viewOwnFlightsOnly, setViewOwnFlightsOnly] = useState(currentUser?.viewOwnFlightsOnly ?? false);
+
   const [profileMsg, setProfileMsg] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
-  
+
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
-  const [newUserRole, setNewUserRole] = useState('user');
+  const [newUserRoles, setNewUserRoles] = useState(['view_only']);
   const [createUserMsg, setCreateUserMsg] = useState('');
 
   useEffect(() => {
@@ -30,11 +77,8 @@ const SettingsView = () => {
   }, [isAdmin, activeTab]);
 
   const handleDeleteUser = async (id) => {
-    if (id === currentUser.id) {
-      alert("You cannot delete yourself.");
-      return;
-    }
-    if (window.confirm("Are you sure you want to delete this user?")) {
+    if (id === currentUser.id) { alert('You cannot delete yourself.'); return; }
+    if (window.confirm('Are you sure you want to delete this user?')) {
       await authService.deleteUser(id);
       setUsers(authService.getUsers());
     }
@@ -42,96 +86,87 @@ const SettingsView = () => {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    if (newUserRoles.length === 0) {
+      setCreateUserMsg({ type: 'error', text: 'Please assign at least one role.' });
+      return;
+    }
     try {
-      await authService.adminCreateUser(newUserName, newUserEmail, newUserPassword, newUserRole);
+      await authService.adminCreateUser(newUserName, newUserEmail, newUserPassword, newUserRoles);
       setUsers(authService.getUsers());
       setShowCreateUser(false);
-      setNewUserName('');
-      setNewUserEmail('');
-      setNewUserPassword('');
-      setNewUserRole('user');
-      setCreateUserMsg('');
-    } catch (e) {
-      setCreateUserMsg({ type: 'error', text: e.message });
+      setNewUserName(''); setNewUserEmail(''); setNewUserPassword(''); setNewUserRoles(['view_only']); setCreateUserMsg('');
+    } catch (err) {
+      setCreateUserMsg({ type: 'error', text: err.message });
     }
   };
 
-  const handleRoleChange = async (id, newRole) => {
-    if (id === currentUser.id && newRole !== 'admin') {
-      alert("You cannot remove your own admin privileges.");
+  const handleRolesChange = async (userId, newRoles) => {
+    if (userId === currentUser.id && !newRoles.includes('admin')) {
+      alert('You cannot remove your own admin privileges.');
       return;
     }
-    await authService.updateUserRole(id, newRole);
+    if (newRoles.length === 0) { alert('A user must have at least one role.'); return; }
+    await authService.updateUserRoles(userId, newRoles);
     setUsers(authService.getUsers());
   };
 
   const handleUpdateProfile = async () => {
     try {
-      await updateProfile({ name, notifications });
+      await updateProfile({ name, notifications, viewOwnFlightsOnly });
       setProfileMsg({ type: 'success', text: 'Profile updated successfully!' });
       setTimeout(() => setProfileMsg(''), 3000);
-    } catch (e) {
-      setProfileMsg({ type: 'error', text: e.message });
+    } catch (err) {
+      setProfileMsg({ type: 'error', text: err.message });
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: 'error', text: 'New passwords do not match' });
-      return;
-    }
+    if (newPassword !== confirmPassword) { setPasswordMsg({ type: 'error', text: 'New passwords do not match' }); return; }
     try {
       await authService.updatePassword(currentUser.id, currentPassword, newPassword);
       setPasswordMsg({ type: 'success', text: 'Password updated successfully!' });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
       setTimeout(() => setPasswordMsg(''), 3000);
-    } catch (e) {
-      setPasswordMsg({ type: 'error', text: e.message });
+    } catch (err) {
+      setPasswordMsg({ type: 'error', text: err.message });
     }
   };
 
   const handleResetAirportHistory = () => {
-    if (window.confirm("Are you sure you want to clear your airport search history?")) {
+    if (window.confirm('Are you sure you want to clear your airport search history?')) {
       localStorage.removeItem('locationUsage');
-      alert("Airport search history cleared!");
+      alert('Airport search history cleared!');
     }
   };
 
+  const currentUserRoles = getUserRoles(currentUser);
+  const isViewOnly = currentUserRoles.length === 1 && currentUserRoles[0] === 'view_only';
+
+  const tabStyle = (tab) => ({
+    padding: '15px 20px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
+    fontWeight: activeTab === tab ? 'bold' : 'normal',
+    backgroundColor: activeTab === tab ? '#f4f5f7' : 'transparent',
+    color: activeTab === tab ? 'var(--primary-color)' : 'var(--text-color)'
+  });
+
   return (
     <div style={{ display: 'flex', height: '100%', gap: '20px', padding: '20px' }}>
-      {/* Sidebar for Settings */}
-      <div style={{ width: '250px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-        <div 
-          onClick={() => setActiveTab('account')}
-          style={{ padding: '15px 20px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontWeight: activeTab === 'account' ? 'bold' : 'normal', backgroundColor: activeTab === 'account' ? '#f4f5f7' : 'transparent', color: activeTab === 'account' ? 'var(--primary-color)' : 'var(--text-color)' }}
-        >
-          My Account
-        </div>
-        {isAdmin && (
-          <div 
-            onClick={() => setActiveTab('users')}
-            style={{ padding: '15px 20px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontWeight: activeTab === 'users' ? 'bold' : 'normal', backgroundColor: activeTab === 'users' ? '#f4f5f7' : 'transparent', color: activeTab === 'users' ? 'var(--primary-color)' : 'var(--text-color)' }}
-          >
-            System Users
-          </div>
-        )}
-        <div 
-          onClick={() => setActiveTab('development')}
-          style={{ padding: '15px 20px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontWeight: activeTab === 'development' ? 'bold' : 'normal', backgroundColor: activeTab === 'development' ? '#f4f5f7' : 'transparent', color: activeTab === 'development' ? 'var(--primary-color)' : 'var(--text-color)' }}
-        >
-          Development
-        </div>
+      {/* Sidebar */}
+      <div style={{ width: '220px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden', height: 'fit-content' }}>
+        <div onClick={() => setActiveTab('account')} style={tabStyle('account')}>My Account</div>
+        {isAdmin && <div onClick={() => setActiveTab('users')} style={tabStyle('users')}>System Users</div>}
+        <div onClick={() => setActiveTab('development')} style={tabStyle('development')}>Development</div>
       </div>
 
-      {/* Main Settings Content */}
+      {/* Main Content */}
       <div style={{ flex: 1, backgroundColor: 'white', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '30px', overflowY: 'auto' }}>
+
+        {/* MY ACCOUNT */}
         {activeTab === 'account' && (
           <div style={{ maxWidth: '600px' }}>
             <h3 style={{ marginTop: 0, borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>My Profile</h3>
-            
+
             {profileMsg && (
               <div style={{ padding: '10px', borderRadius: '4px', marginBottom: '15px', backgroundColor: profileMsg.type === 'success' ? '#c6f6d5' : '#fed7d7', color: profileMsg.type === 'success' ? '#2f855a' : '#c53030' }}>
                 {profileMsg.text}
@@ -145,14 +180,36 @@ const SettingsView = () => {
               </div>
               <div>
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Email</label>
-                <input type="email" className="form-control" style={{ width: '100%', backgroundColor: '#f4f5f7' }} value={currentUser?.email || ''} disabled title="Email cannot be changed" />
+                <input type="email" className="form-control" style={{ width: '100%', backgroundColor: '#f4f5f7' }} value={currentUser?.email || ''} disabled />
               </div>
               <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Role</label>
-                <input type="text" className="form-control" style={{ width: '100%', backgroundColor: '#f4f5f7' }} value={currentUser?.role || 'user'} disabled />
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>My Roles</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '8px', backgroundColor: '#f7fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  {currentUserRoles.map(r => <RoleBadge key={r} role={r} />)}
+                </div>
               </div>
-              
-              <div style={{ marginTop: '10px' }}>
+
+              {/* View Only toggle: all flights vs own flights */}
+              {(isViewOnly || currentUserRoles.includes('view_only')) && (
+                <div style={{ padding: '12px', backgroundColor: '#ebf8ff', borderRadius: '6px', border: '1px solid #bee3f8' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={viewOwnFlightsOnly}
+                      onChange={e => setViewOwnFlightsOnly(e.target.checked)}
+                      style={{ width: '16px', height: '16px', marginTop: '2px' }}
+                    />
+                    <div>
+                      <span style={{ fontWeight: 'bold', display: 'block' }}>Show My Flights Only</span>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                        When checked, you will only see flights where you are listed as a passenger or crew member. Uncheck to view all scheduled flights.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              <div style={{ marginTop: '5px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={notifications} onChange={e => setNotifications(e.target.checked)} style={{ width: '16px', height: '16px' }} />
                   <span style={{ fontWeight: 'bold' }}>Enable Notifications</span>
@@ -160,11 +217,11 @@ const SettingsView = () => {
                 <p style={{ margin: '5px 0 0 26px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Receive email and push notifications about flight updates.</p>
               </div>
 
-              <button className="btn btn-primary" style={{ width: 'fit-content', marginTop: '10px' }} onClick={handleUpdateProfile}>Save Profile</button>
+              <button className="btn btn-primary" style={{ width: 'fit-content', marginTop: '5px' }} onClick={handleUpdateProfile}>Save Profile</button>
             </div>
 
             <h3 style={{ marginTop: '40px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>Change Password</h3>
-            
+
             {passwordMsg && (
               <div style={{ padding: '10px', borderRadius: '4px', marginBottom: '15px', backgroundColor: passwordMsg.type === 'success' ? '#c6f6d5' : '#fed7d7', color: passwordMsg.type === 'success' ? '#2f855a' : '#c53030' }}>
                 {passwordMsg.text}
@@ -184,37 +241,20 @@ const SettingsView = () => {
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Confirm New Password</label>
                 <input type="password" required className="form-control" style={{ width: '100%' }} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={6} />
               </div>
-              <button type="submit" className="btn btn-outline" style={{ width: 'fit-content', marginTop: '10px' }}>Update Password</button>
+              <button type="submit" className="btn btn-outline" style={{ width: 'fit-content', marginTop: '5px' }}>Update Password</button>
             </form>
 
             <h3 style={{ marginTop: '40px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>Data Management</h3>
             <div style={{ marginTop: '20px' }}>
               <p style={{ margin: '0 0 10px 0', color: 'var(--text-muted)' }}>Clear your locally cached airport search history to remove phantom or old locations from the dropdown.</p>
-              <button 
-                className="btn btn-outline" 
-                style={{ color: '#e53e3e', borderColor: '#e53e3e' }}
-                onClick={handleResetAirportHistory}
-              >
+              <button className="btn btn-outline" style={{ color: '#e53e3e', borderColor: '#e53e3e' }} onClick={handleResetAirportHistory}>
                 Reset Airport History
               </button>
             </div>
           </div>
         )}
 
-        {activeTab === 'development' && (
-          <div style={{ maxWidth: '600px' }}>
-            <h3 style={{ marginTop: 0, borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>Development Reminders</h3>
-            <div style={{ backgroundColor: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '4px', padding: '15px', marginTop: '20px' }}>
-              <h4 style={{ margin: '0 0 10px 0', color: '#c53030' }}>⚠️ Temporary Feature Warning</h4>
-              <p style={{ margin: 0, color: '#742a2a', lineHeight: '1.5' }}>
-                <strong>IndexedDB File Storage:</strong> The current file upload system for expense receipts uses <code>localforage</code> to store files directly in the browser's IndexedDB for local testing purposes. 
-                <br /><br />
-                <strong>REMINDER:</strong> Remove this <code>localforage</code> implementation and replace it with a true cloud storage integration (e.g., AWS S3, Google Drive) when building out the real production backend.
-              </p>
-            </div>
-          </div>
-        )}
-
+        {/* SYSTEM USERS — Admin only */}
         {activeTab === 'users' && isAdmin && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
@@ -223,92 +263,101 @@ const SettingsView = () => {
                 {showCreateUser ? 'Cancel' : '+ Create User'}
               </button>
             </div>
-            
+
             {showCreateUser && (
               <div style={{ backgroundColor: '#f4f5f7', padding: '20px', borderRadius: '8px', marginTop: '15px' }}>
                 <h4 style={{ marginTop: 0 }}>Create New User</h4>
                 {createUserMsg && (
-                  <div style={{ padding: '10px', borderRadius: '4px', marginBottom: '15px', backgroundColor: createUserMsg.type === 'success' ? '#c6f6d5' : '#fed7d7', color: createUserMsg.type === 'success' ? '#2f855a' : '#c53030' }}>
+                  <div style={{ padding: '10px', borderRadius: '4px', marginBottom: '15px', backgroundColor: createUserMsg.type === 'error' ? '#fed7d7' : '#c6f6d5', color: createUserMsg.type === 'error' ? '#c53030' : '#2f855a' }}>
                     {createUserMsg.text}
                   </div>
                 )}
-                <form onSubmit={handleCreateUser} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Name</label>
-                    <input type="text" required className="form-control" style={{ width: '100%' }} value={newUserName} onChange={e => setNewUserName(e.target.value)} />
+                <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Name</label>
+                      <input type="text" required className="form-control" style={{ width: '100%' }} value={newUserName} onChange={e => setNewUserName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Email</label>
+                      <input type="email" required className="form-control" style={{ width: '100%' }} value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Password</label>
+                      <input type="text" required className="form-control" style={{ width: '100%' }} value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} minLength={6} />
+                    </div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Email</label>
-                    <input type="email" required className="form-control" style={{ width: '100%' }} value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} />
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Roles <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(select all that apply)</span></label>
+                    <RoleCheckboxGroup value={newUserRoles} onChange={setNewUserRoles} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Password</label>
-                    <input type="text" required className="form-control" style={{ width: '100%' }} value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} minLength={6} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Role</label>
-                    <select className="form-control" style={{ width: '100%' }} value={newUserRole} onChange={e => setNewUserRole(e.target.value)}>
-                      <option value="admin">Admin</option>
-                      <option value="pilot">Pilot</option>
-                      <option value="crew">Crew</option>
-                      <option value="user">User</option>
-                      <option value="view_only">View Only</option>
-                    </select>
-                  </div>
-                  <div style={{ gridColumn: 'span 2' }}>
                     <button type="submit" className="btn btn-primary">Create User</button>
                   </div>
                 </form>
               </div>
             )}
-            
-            <table className="table" style={{ marginTop: '20px' }}>
+
+            <table className="table" style={{ marginTop: '20px', width: '100%' }}>
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
-                  <th>Password (Admin View)</th>
-                  <th>Role</th>
+                  <th>Password</th>
+                  <th style={{ minWidth: '320px' }}>Roles</th>
                   <th>Joined</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
-                  <tr key={u.id}>
-                    <td><strong>{u.name}</strong></td>
-                    <td>{u.email}</td>
-                    <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{u.password}</td>
-                    <td>
-                      <select 
-                        value={u.role || 'user'} 
-                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                        className="form-control"
-                        style={{ padding: '4px', fontSize: '0.85rem' }}
-                        disabled={u.id === currentUser.id}
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="pilot">Pilot</option>
-                        <option value="crew">Crew</option>
-                        <option value="user">User</option>
-                        <option value="view_only">View Only</option>
-                      </select>
-                    </td>
-                    <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <button 
-                        className="btn btn-outline" 
-                        style={{ color: '#e53e3e', borderColor: '#e53e3e', padding: '4px 8px', fontSize: '0.75rem' }}
-                        onClick={() => handleDeleteUser(u.id)}
-                        disabled={u.id === currentUser.id}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {users.map(u => {
+                  const uRoles = Array.isArray(u.roles) ? u.roles : [u.role || 'view_only'];
+                  return (
+                    <tr key={u.id}>
+                      <td><strong>{u.name}</strong></td>
+                      <td>{u.email}</td>
+                      <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{u.password}</td>
+                      <td>
+                        {u.id === currentUser.id ? (
+                          <div>{uRoles.map(r => <RoleBadge key={r} role={r} />)}</div>
+                        ) : (
+                          <RoleCheckboxGroup
+                            value={uRoles}
+                            onChange={(newRoles) => handleRolesChange(u.id, newRoles)}
+                          />
+                        )}
+                      </td>
+                      <td style={{ fontSize: '0.82rem' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button
+                          className="btn btn-outline"
+                          style={{ color: '#e53e3e', borderColor: '#e53e3e', padding: '4px 8px', fontSize: '0.75rem' }}
+                          onClick={() => handleDeleteUser(u.id)}
+                          disabled={u.id === currentUser.id}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* DEVELOPMENT */}
+        {activeTab === 'development' && (
+          <div style={{ maxWidth: '600px' }}>
+            <h3 style={{ marginTop: 0, borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>Development Reminders</h3>
+            <div style={{ backgroundColor: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '4px', padding: '15px', marginTop: '20px' }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#c53030' }}>⚠️ Temporary Feature Warning</h4>
+              <p style={{ margin: 0, color: '#742a2a', lineHeight: '1.5' }}>
+                <strong>IndexedDB File Storage:</strong> The current file upload system for expense receipts uses <code>localforage</code> to store files directly in the browser's IndexedDB for local testing purposes.
+                <br /><br />
+                <strong>REMINDER:</strong> Remove this <code>localforage</code> implementation and replace it with a true cloud storage integration (e.g., AWS S3, Google Drive) when building out the real production backend.
+              </p>
+            </div>
           </div>
         )}
       </div>

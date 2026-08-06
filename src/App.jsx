@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Users, Settings, MapPin, Plane, UserCheck, Building, LogOut } from 'lucide-react';
 import './index.css';
+import { can as permCan } from './services/permissionService';
 import CalendarView from './components/CalendarView';
 import PilotsList from './components/PilotsList';
 import LocationsView from './components/LocationsView';
@@ -9,7 +10,7 @@ import AircraftList from './components/AircraftList';
 import PassengersList from './components/PassengersList';
 import CrewView from './components/CrewView';
 import { initDataSync } from './services/dataSyncService';
-const APP_VERSION = "v0.1.28";
+const APP_VERSION = "v0.1.29";
 import AccountsContactsView from './components/AccountsContactsView';
 import ExpensesPage from './components/ExpensesPage';
 import SettingsView from './components/SettingsView';
@@ -75,20 +76,24 @@ function DashboardLayout() {
             <Plane size={20} />
             Fleet
           </li>
-          <li 
-            className={`nav-item ${activeTab === 'accounts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('accounts')}
-          >
-            <Building size={20} />
-            Accounts & Contacts
-          </li>
-          <li 
-            className={`nav-item ${activeTab === 'expenses' ? 'active' : ''}`}
-            onClick={() => setActiveTab('expenses')}
-          >
-            <DollarSign size={20} />
-            Expenses
-          </li>
+          {permCan(currentUser, 'manageAccounts') && (
+            <li 
+              className={`nav-item ${activeTab === 'accounts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('accounts')}
+            >
+              <Building size={20} />
+              Accounts & Contacts
+            </li>
+          )}
+          {permCan(currentUser, 'viewExpensesOverview') && (
+            <li 
+              className={`nav-item ${activeTab === 'expenses' ? 'active' : ''}`}
+              onClick={() => setActiveTab('expenses')}
+            >
+              <DollarSign size={20} />
+              Expenses
+            </li>
+          )}
           <li 
             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
