@@ -91,6 +91,33 @@ const PilotsList = () => {
     };
   };
 
+  const getTotalLoggedHours = (pilot) => {
+    if (!pilot) return 0;
+    const baseline = parseFloat(pilot.hoursLogged || 0);
+    let signedFlightHours = 0;
+
+    (flights || []).forEach(flight => {
+      // Check if flight has a signed flight log
+      const flightLog = flight.flightLog;
+      if (flightLog && flightLog.signature) {
+        // Check if this pilot is assigned to the flight or any of its legs
+        const isPilotAssigned = (flight.pilotId && String(flight.pilotId) === String(pilot.id)) ||
+          (flight.legs && flight.legs.some(l => String(l.pilotId) === String(pilot.id)));
+
+        if (isPilotAssigned) {
+          // Sum up actual flight hours from legsActuals or flightLog totals
+          if (flightLog.legsActuals && Array.isArray(flightLog.legsActuals)) {
+            flightLog.legsActuals.forEach(l => {
+              signedFlightHours += parseFloat(l.flightHrs || 0);
+            });
+          }
+        }
+      }
+    });
+
+    return (baseline + signedFlightHours).toFixed(1);
+  };
+
   const filteredPilots = pilots.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     p.id.toLowerCase().includes(search.toLowerCase())
@@ -234,7 +261,7 @@ const PilotsList = () => {
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
                     <span style={{ color: 'var(--primary-color)' }}>{pilot.id}</span>
-                    <span style={{ color: 'var(--text-muted)' }}>{pilot.hoursLogged || 0} hrs</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{getTotalLoggedHours(pilot)} hrs</span>
                   </div>
                   {statusObj.hasFlight && (
                     <div style={{ fontSize: '0.72rem', color: '#2b6cb0', marginTop: '4px', fontWeight: 500 }}>
@@ -324,13 +351,28 @@ const PilotsList = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Total Flight Hours Logged</label>
-                <input 
-                  type="number" 
-                  value={editForm.hoursLogged || 0} 
-                  onChange={(e) => setEditForm({...editForm, hoursLogged: parseInt(e.target.value) || 0})}
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
-                />
+                <label style={{ fontSize: '0.8rem', fontWeight: 500, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Total Logged Flight Hours</span>
+                  <span style={{ fontSize: '0.75rem', color: '#2b6cb0', fontWeight: 'bold' }}>
+                    Total: {getTotalLoggedHours(selectedPilot)} hrs
+                  </span>
+                </label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={editForm.hoursLogged || 0} 
+                    onChange={(e) => setEditForm({...editForm, hoursLogged: parseFloat(e.target.value) || 0})}
+                    placeholder="Baseline Hours"
+                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    (Baseline)
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Automatically adds flight time from completed/signed flight logs to your baseline hours.
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Medical Expiration Date</label>
