@@ -20,19 +20,19 @@ const CrewView = () => {
           className={`btn ${activeSubTab === 'pilots' ? 'btn-primary' : 'btn-outline'}`}
           onClick={() => setActiveSubTab('pilots')}
         >
-          Pilots Directory
+          Pilots
         </button>
         <button 
           className={`btn ${activeSubTab === 'crew' ? 'btn-primary' : 'btn-outline'}`}
           onClick={() => setActiveSubTab('crew')}
         >
-          Crew Directory
+          Crew
         </button>
         <button 
           className={`btn ${activeSubTab === 'passengers' ? 'btn-primary' : 'btn-outline'}`}
           onClick={() => setActiveSubTab('passengers')}
         >
-          Passengers Directory
+          Passengers
         </button>
       </div>
 

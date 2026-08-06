@@ -2,6 +2,13 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.24] - 2026-08-06
+
+### Changed
+- **Crew & Passengers Navigation Labels**: Simplified subtab button titles in `CrewView.jsx` from "Pilots Directory", "Crew Directory", and "Passengers Directory" to **Pilots**, **Crew**, and **Passengers**.
+
+---
+
 ## [v0.1.23] - 2026-08-06
 
 ### Changed
