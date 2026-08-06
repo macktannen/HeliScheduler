@@ -10,6 +10,9 @@ const PilotsList = () => {
   const [editForm, setEditForm] = useState(null);
   const [saved, setSaved] = useState(false);
 
+  const [schedules, setSchedules] = useState({});
+  const [flights, setFlights] = useState([]);
+
   const loadData = () => {
     let storedPilots = [];
     try {
@@ -34,11 +37,59 @@ const PilotsList = () => {
     // Sort by name
     storedPilots.sort((a, b) => a.name.localeCompare(b.name));
     setPilots(storedPilots);
+
+    try {
+      setSchedules(JSON.parse(localStorage.getItem('crewSchedules') || '{}'));
+      setFlights(JSON.parse(localStorage.getItem('userFlights') || '[]'));
+    } catch(e) {}
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  const getTodayPilotStatus = (pilot) => {
+    if (!pilot) return { dutyStatus: 'Off Duty', flightText: null, fullLabel: 'Off Duty' };
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+
+    // 1. Check schedule grid for today
+    const keyById = `${pilot.id}_${todayStr}`;
+    const keyByName = `${pilot.name}_${todayStr}`;
+    const dutyStatus = schedules[keyById] || schedules[keyByName] || 'Off Duty';
+
+    // 2. Check scheduled flights for today where pilot is assigned
+    const todayFlights = (flights || []).filter(f => {
+      if (!f.legs || f.legs.length === 0) {
+        const fDate = f.date ? f.date.split('T')[0] : '';
+        return fDate === todayStr && String(f.pilotId) === String(pilot.id);
+      }
+      return f.legs.some(l => {
+        const lDate = l.date || (f.date ? f.date.split('T')[0] : '');
+        return lDate === todayStr && String(l.pilotId) === String(pilot.id);
+      });
+    });
+
+    if (todayFlights.length > 0) {
+      const flightInfo = todayFlights.map(f => `#${f.flightNumber}: ${f.title}`).join(', ');
+      return {
+        dutyStatus,
+        hasFlight: true,
+        flightText: flightInfo,
+        fullLabel: `${dutyStatus} - Scheduled: ${flightInfo}`
+      };
+    }
+
+    return {
+      dutyStatus,
+      hasFlight: false,
+      flightText: null,
+      fullLabel: dutyStatus
+    };
+  };
 
   const filteredPilots = pilots.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -157,33 +208,42 @@ const PilotsList = () => {
               No pilots found.
             </div>
           ) : (
-            filteredPilots.map(pilot => (
-              <div 
-                key={pilot.id}
-                onClick={() => handleSelect(pilot)}
-                style={{
-                  padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                  backgroundColor: selectedPilot?.id === pilot.id ? 'var(--primary-light)' : 'white',
-                  borderLeft: selectedPilot?.id === pilot.id ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <strong style={{ fontSize: '0.875rem' }}>{pilot.name}</strong>
-                  <span style={{ 
-                    fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px', 
-                    backgroundColor: pilot.status === 'Available' ? '#c6f6d5' : pilot.status === 'On Duty' ? '#feebc8' : '#fed7d7',
-                    color: pilot.status === 'Available' ? '#22543d' : pilot.status === 'On Duty' ? '#744210' : '#742a2a'
-                  }}>
-                    {pilot.status}
-                  </span>
+            filteredPilots.map(pilot => {
+              const statusObj = getTodayPilotStatus(pilot);
+              const isDuty = statusObj.dutyStatus === 'On Duty' || statusObj.dutyStatus === 'Training';
+              return (
+                <div 
+                  key={pilot.id}
+                  onClick={() => handleSelect(pilot)}
+                  style={{
+                    padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    backgroundColor: selectedPilot?.id === pilot.id ? 'var(--primary-light)' : 'white',
+                    borderLeft: selectedPilot?.id === pilot.id ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <strong style={{ fontSize: '0.875rem' }}>{pilot.name}</strong>
+                    <span style={{ 
+                      fontSize: '0.65rem', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold',
+                      backgroundColor: isDuty ? (statusObj.hasFlight ? '#c6f6d5' : '#feebc8') : '#edf2f7',
+                      color: isDuty ? (statusObj.hasFlight ? '#22543d' : '#744210') : '#4a5568'
+                    }}>
+                      {statusObj.dutyStatus}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
+                    <span style={{ color: 'var(--primary-color)' }}>{pilot.id}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{pilot.hoursLogged || 0} hrs</span>
+                  </div>
+                  {statusObj.hasFlight && (
+                    <div style={{ fontSize: '0.72rem', color: '#2b6cb0', marginTop: '4px', fontWeight: 500 }}>
+                      ✈️ {statusObj.flightText}
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
-                  <span style={{ color: 'var(--primary-color)' }}>{pilot.id}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>{pilot.hoursLogged || 0} hrs</span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -219,17 +279,46 @@ const PilotsList = () => {
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Status</label>
-                <select 
-                  value={editForm.status || 'Available'} 
-                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
-                >
-                  <option value="Available">Available</option>
-                  <option value="On Duty">On Duty</option>
-                  <option value="Off Duty">Off Duty</option>
-                  <option value="On Leave">On Leave</option>
-                </select>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Today's Schedule Status</label>
+                {(() => {
+                  const statusObj = getTodayPilotStatus(selectedPilot);
+                  const isDuty = statusObj.dutyStatus === 'On Duty' || statusObj.dutyStatus === 'Training';
+                  return (
+                    <div style={{
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: isDuty ? (statusObj.hasFlight ? '#f0fff4' : '#fffaf0') : '#f7fafc',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          fontWeight: 'bold',
+                          color: isDuty ? (statusObj.hasFlight ? '#276749' : '#975a16') : '#4a5568'
+                        }}>
+                          {statusObj.dutyStatus}
+                        </span>
+                        {statusObj.hasFlight && (
+                          <span style={{ fontSize: '0.75rem', backgroundColor: '#ebf8ff', color: '#2b6cb0', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                            Flight Scheduled
+                          </span>
+                        )}
+                      </div>
+                      {statusObj.hasFlight ? (
+                        <div style={{ fontSize: '0.78rem', color: '#2b6cb0', marginTop: '2px', fontWeight: 500 }}>
+                          ✈️ {statusObj.flightText}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {isDuty ? 'On Duty - No scheduled flights today' : 'Not scheduled on duty today'}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
