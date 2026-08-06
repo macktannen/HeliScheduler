@@ -26,7 +26,12 @@ const AircraftList = () => {
         storedAircraft = [...mockAircrafts].map(a => ({
           ...a,
           baseLocation: 'KVPZ',
-          totalHours: 1250,
+          totalHours: a.totalHours || 1250,
+          engine1Hours: a.engine1Hours || a.engineHours || a.totalHours || 1250,
+          engine2Hours: a.engine2Hours || 0,
+          engine1Cycles: a.engine1Cycles || a.engineCycles || 450,
+          engine2Cycles: a.engine2Cycles || 0,
+          dualEngine: a.dualEngine || false,
           maxCruiseSpeed: 120,
           lastInspection: '2025-10-01',
           nextInspection: '2026-10-01',
@@ -109,8 +114,11 @@ const AircraftList = () => {
       const metrics = [
          { key: 'totalHours', label: 'Aircraft Hours' },
          { key: 'landings', label: 'Aircraft Landings' },
-         { key: 'engineHours', label: 'Engine Hours' },
-         { key: 'engineCycles', label: 'Engine Cycles' },
+         { key: 'engine1Hours', label: 'Engine 1 Hours' },
+         { key: 'engine2Hours', label: 'Engine 2 Hours' },
+         { key: 'engine1Cycles', label: 'Engine 1 Cycles' },
+         { key: 'engine2Cycles', label: 'Engine 2 Cycles' },
+         { key: 'dualEngine', label: 'Twin Engine Aircraft' },
          { key: 'hobbs', label: 'Hobbs' },
          { key: 'status', label: 'Status' },
          { key: 'baseLocation', label: 'Base Location' }
@@ -297,9 +305,20 @@ const AircraftList = () => {
 
               {/* Logbook Totals */}
               <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px', border: '1px solid var(--border-color)', borderRadius: '6px', backgroundColor: 'var(--bg-color)' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Plane size={16} /> Logbook Totals
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Plane size={16} /> Logbook Totals
+                  </label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', backgroundColor: 'white', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={editForm.dualEngine || false} 
+                      onChange={(e) => setEditForm({...editForm, dualEngine: e.target.checked})} 
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <span>Twin Engine</span>
+                  </label>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Aircraft Hours</label>
@@ -309,15 +328,32 @@ const AircraftList = () => {
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Aircraft Landings</label>
                     <input type="number" value={editForm.landings || 0} onChange={(e) => setEditForm({...editForm, landings: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
                   </div>
+
+                  {/* Engine 1 */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine Hours</label>
-                    <input type="number" step="0.1" value={editForm.engineHours || 0} onChange={(e) => setEditForm({...editForm, engineHours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine 1 Hours</label>
+                    <input type="number" step="0.1" value={editForm.engine1Hours !== undefined ? editForm.engine1Hours : (editForm.engineHours || editForm.totalHours || 0)} onChange={(e) => setEditForm({...editForm, engine1Hours: parseFloat(e.target.value) || 0, engineHours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine Cycles</label>
-                    <input type="number" value={editForm.engineCycles || 0} onChange={(e) => setEditForm({...editForm, engineCycles: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Engine 1 Cycles</label>
+                    <input type="number" value={editForm.engine1Cycles !== undefined ? editForm.engine1Cycles : (editForm.engineCycles || 0)} onChange={(e) => setEditForm({...editForm, engine1Cycles: parseInt(e.target.value) || 0, engineCycles: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+
+                  {/* Engine 2 (Conditional) */}
+                  {editForm.dualEngine && (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#2b6cb0' }}>Engine 2 Hours</label>
+                        <input type="number" step="0.1" value={editForm.engine2Hours || 0} onChange={(e) => setEditForm({...editForm, engine2Hours: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: isAdmin ? '#ebf8ff' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#2b6cb0' }}>Engine 2 Cycles</label>
+                        <input type="number" value={editForm.engine2Cycles || 0} onChange={(e) => setEditForm({...editForm, engine2Cycles: parseInt(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #bee3f8', fontSize: '0.875rem', backgroundColor: isAdmin ? '#ebf8ff' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
+                      </div>
+                    </>
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', gridColumn: editForm.dualEngine ? 'span 2' : 'span 1' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 500 }}>Hobbs Meter</label>
                     <input type="number" step="0.1" value={editForm.hobbs || 0} onChange={(e) => setEditForm({...editForm, hobbs: parseFloat(e.target.value) || 0})} disabled={!isAdmin} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: isAdmin ? 'white' : '#f7fafc', cursor: isAdmin ? 'text' : 'not-allowed' }} />
                   </div>

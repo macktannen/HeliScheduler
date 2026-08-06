@@ -39,8 +39,11 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
                flightBefore: ac.totalHours || 0,
                hobbsBefore: ac.hobbs || 0,
                landingsBefore: ac.landings || 0,
-               engine1Before: ac.engineHours || ac.totalHours || 0,
-               cycles1Before: ac.engineCycles || 0,
+               engine1Before: ac.engine1Hours !== undefined ? ac.engine1Hours : (ac.engineHours || ac.totalHours || 0),
+               engine2Before: ac.engine2Hours || 0,
+               cycles1Before: ac.engine1Cycles !== undefined ? ac.engine1Cycles : (ac.engineCycles || 0),
+               cycles2Before: ac.engine2Cycles || 0,
+               dualEngine: ac.dualEngine || false
              }
            }));
         }
@@ -91,10 +94,18 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
       if (acIndex >= 0) {
         const ac = storedAircraft[acIndex];
         ac.totalHours = Math.max(0, parseFloat(ac.totalHours || 0) + (changeFlight * multiplier)).toFixed(1);
-        ac.engineHours = Math.max(0, parseFloat(ac.engineHours || ac.totalHours || 0) + (changeFlight * multiplier)).toFixed(1);
+        ac.engine1Hours = Math.max(0, parseFloat(ac.engine1Hours !== undefined ? ac.engine1Hours : (ac.engineHours || ac.totalHours || 0)) + (changeFlight * multiplier)).toFixed(1);
+        ac.engineHours = ac.engine1Hours;
+        ac.engine1Cycles = Math.max(0, parseInt(ac.engine1Cycles !== undefined ? ac.engine1Cycles : (ac.engineCycles || 0)) + (changeEngineCycles * multiplier));
+        ac.engineCycles = ac.engine1Cycles;
+
+        if (ac.dualEngine) {
+          ac.engine2Hours = Math.max(0, parseFloat(ac.engine2Hours || 0) + (changeFlight * multiplier)).toFixed(1);
+          ac.engine2Cycles = Math.max(0, parseInt(ac.engine2Cycles || 0) + (changeEngineCycles * multiplier));
+        }
+
         ac.hobbs = Math.max(0, parseFloat(ac.hobbs || 0) + (changeHobbs * multiplier)).toFixed(1);
         ac.landings = Math.max(0, parseInt(ac.landings || 0) + (changeLandings * multiplier));
-        ac.engineCycles = Math.max(0, parseInt(ac.engineCycles || 0) + (changeEngineCycles * multiplier));
         localStorage.setItem('userAircraft', JSON.stringify(storedAircraft));
       }
     } catch(e) { console.error("Failed to update aircraft totals", e); }
@@ -257,17 +268,33 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
               <td style={{ textAlign: 'right', color: changeLandings > 0 ? 'green' : 'inherit', padding: '2px 4px' }}>+{changeLandings}</td>
             </tr>
             <tr>
-              <td style={{ fontWeight: 'bold', padding: '2px 4px' }}>Engine Hours</td>
+              <td style={{ fontWeight: 'bold', padding: '2px 4px' }}>{log.aircraftTotals?.dualEngine ? 'Engine 1 Hours' : 'Engine Hours'}</td>
               <td style={{ padding: '2px 4px' }}>{log.aircraftTotals?.engine1Before || 1100.2}</td>
               <td style={{ padding: '2px 4px' }}>{(parseFloat(log.aircraftTotals?.engine1Before || 1100.2) + changeFlight).toFixed(1)}</td>
               <td style={{ textAlign: 'right', color: changeFlight > 0 ? 'green' : 'inherit', padding: '2px 4px' }}>+{changeFlight.toFixed(1)}</td>
             </tr>
             <tr>
-              <td style={{ fontWeight: 'bold', padding: '2px 4px' }}>Engine Cycles</td>
+              <td style={{ fontWeight: 'bold', padding: '2px 4px' }}>{log.aircraftTotals?.dualEngine ? 'Engine 1 Cycles' : 'Engine Cycles'}</td>
               <td style={{ padding: '2px 4px' }}>{log.aircraftTotals?.cycles1Before || 450}</td>
               <td style={{ padding: '2px 4px' }}>{(parseInt(log.aircraftTotals?.cycles1Before || 450) + changeEngineCycles)}</td>
               <td style={{ textAlign: 'right', color: changeEngineCycles > 0 ? 'green' : 'inherit', padding: '2px 4px' }}>+{changeEngineCycles}</td>
             </tr>
+            {log.aircraftTotals?.dualEngine && (
+              <>
+                <tr>
+                  <td style={{ fontWeight: 'bold', padding: '2px 4px', color: '#2b6cb0' }}>Engine 2 Hours</td>
+                  <td style={{ padding: '2px 4px' }}>{log.aircraftTotals?.engine2Before || 0}</td>
+                  <td style={{ padding: '2px 4px' }}>{(parseFloat(log.aircraftTotals?.engine2Before || 0) + changeFlight).toFixed(1)}</td>
+                  <td style={{ textAlign: 'right', color: changeFlight > 0 ? 'green' : 'inherit', padding: '2px 4px' }}>+{changeFlight.toFixed(1)}</td>
+                </tr>
+                <tr>
+                  <td style={{ fontWeight: 'bold', padding: '2px 4px', color: '#2b6cb0' }}>Engine 2 Cycles</td>
+                  <td style={{ padding: '2px 4px' }}>{log.aircraftTotals?.cycles2Before || 0}</td>
+                  <td style={{ padding: '2px 4px' }}>{(parseInt(log.aircraftTotals?.cycles2Before || 0) + changeEngineCycles)}</td>
+                  <td style={{ textAlign: 'right', color: changeEngineCycles > 0 ? 'green' : 'inherit', padding: '2px 4px' }}>+{changeEngineCycles}</td>
+                </tr>
+              </>
+            )}
             <tr>
               <td style={{ fontWeight: 'bold', padding: '2px 4px' }}>Hobbs</td>
               <td style={{ padding: '2px 4px' }}>{log.aircraftTotals?.hobbsBefore || 1200.5}</td>

@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.28] - 2026-08-06
+
+### Added
+- **Twin Engine Toggle & Engine 1/2 Logbook Tracking**: Updated `AircraftList.jsx` and `FlightLogTab.jsx` to support multi-engine aircraft management:
+  - Added a **Twin Engine** checkbox toggle on the Fleet Aircraft management card.
+  - Enabled separate **Engine 1 Hours**, **Engine 1 Cycles**, **Engine 2 Hours**, and **Engine 2 Cycles** input fields.
+  - Dynamically updated flight log signature handling to record before/after meter changes for both engines on twin-engine helicopters.
+
+---
+
 ## [v0.1.27] - 2026-08-06
 
 ### Added
