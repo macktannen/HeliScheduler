@@ -2,6 +2,17 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.27] - 2026-08-06
+
+### Added
+- **Dynamic Pilot Medical Status Indicators**: Added real-time medical status indicators tied to each pilot's entered medical expiration date in `PilotsList.jsx`:
+  - **Current** (Green): Expiration date is more than 30 days in the future.
+  - **Caution** (Yellow/Orange): Expiration date is within 30 days.
+  - **Expired** (Red): Expiration date has passed.
+  - Rendered next to the expiration date input on the pilot card and under the duty/flight status indicator in the pilot list.
+
+---
+
 ## [v0.1.26] - 2026-08-06
 
 ### Changed

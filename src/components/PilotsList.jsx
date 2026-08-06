@@ -123,6 +123,32 @@ const PilotsList = () => {
     return (baseline + signedHours).toFixed(1);
   };
 
+  const getMedicalStatus = (expDateStr) => {
+    if (!expDateStr) {
+      return { status: 'Not Set', label: 'Medical: Not Set', bg: '#edf2f7', color: '#718096', border: '#cbd5e0' };
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parts = expDateStr.split('-');
+    if (parts.length !== 3) {
+      return { status: 'Not Set', label: 'Medical: Not Set', bg: '#edf2f7', color: '#718096', border: '#cbd5e0' };
+    }
+    const expDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    expDate.setHours(0, 0, 0, 0);
+
+    const diffTime = expDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return { status: 'Expired', label: 'Medical Expired', daysLeft: diffDays, bg: '#fed7d7', color: '#9b2c2c', border: '#feb2b2' };
+    } else if (diffDays <= 30) {
+      return { status: 'Caution', label: `Medical Caution (${diffDays}d left)`, daysLeft: diffDays, bg: '#feebc8', color: '#9c4221', border: '#fbd38d' };
+    } else {
+      return { status: 'Current', label: 'Medical Current', daysLeft: diffDays, bg: '#c6f6d5', color: '#22543d', border: '#9ae6b4' };
+    }
+  };
+
   const filteredPilots = pilots.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     p.id.toLowerCase().includes(search.toLowerCase())
@@ -264,9 +290,22 @@ const PilotsList = () => {
                       {statusObj.dutyStatus}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
-                    <span style={{ color: 'var(--primary-color)' }}>{pilot.id}</span>
-                    <span style={{ color: 'var(--text-muted)' }}>{getTotalLoggedHours(pilot)} hrs</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', display: 'flex', gap: '10px' }}>
+                      <span style={{ color: 'var(--primary-color)' }}>{pilot.id}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{getTotalLoggedHours(pilot)} hrs</span>
+                    </div>
+                    {(() => {
+                      const med = getMedicalStatus(pilot.medicalExpiration);
+                      return (
+                        <span style={{ 
+                          fontSize: '0.62rem', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold',
+                          backgroundColor: med.bg, color: med.color, border: `1px solid ${med.border}`
+                        }}>
+                          {med.status === 'Current' ? 'Med Current' : med.status === 'Caution' ? `Med Caution (${med.daysLeft}d)` : med.status === 'Expired' ? 'Med Expired' : 'Med Not Set'}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {statusObj.hasFlight && (
                     <div style={{ fontSize: '0.72rem', color: '#2b6cb0', marginTop: '4px', fontWeight: 500 }}>
@@ -382,13 +421,28 @@ const PilotsList = () => {
                 })()}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Medical Expiration Date</label>
-                <input 
-                  type="date" 
-                  value={editForm.medicalExpiration || ''} 
-                  onChange={(e) => setEditForm({...editForm, medicalExpiration: e.target.value})}
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
-                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Medical Expiration Date</label>
+                  {(() => {
+                    const med = getMedicalStatus(editForm.medicalExpiration);
+                    return (
+                      <span style={{ 
+                        fontSize: '0.72rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold',
+                        backgroundColor: med.bg, color: med.color, border: `1px solid ${med.border}`
+                      }}>
+                        {med.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input 
+                    type="date" 
+                    value={editForm.medicalExpiration || ''} 
+                    onChange={(e) => setEditForm({...editForm, medicalExpiration: e.target.value})}
+                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+                  />
+                </div>
               </div>
             </div>
 
