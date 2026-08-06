@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.33] - 2026-08-06
+
+### Added
+- **Clickable Flight Cards on Schedule Grid**:
+  - Clicking any flight card on the **Schedules Grid** (`CrewSchedule.jsx`) now opens the full interactive **Flight Modal** (`EventModal.jsx`).
+  - Allows viewing and editing flight details, leg actuals, flight log signatures, and flight expenses directly from the schedule grid view.
+  - Added live data sync so changes made in the flight modal immediately update the schedule grid.
+
+---
+
 ## [v0.1.32] - 2026-08-06
 
 ### Changed

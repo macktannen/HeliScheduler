@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Filter, Settings, Plane, X, Plus, GripVertic
 import { startOfWeek, addDays, format, subWeeks, addWeeks, isSameDay } from 'date-fns';
 import airportsData from '../data/airports.json';
 import { mockCustomZones } from '../data';
+import EventModal from './EventModal';
 
 const LEGEND = {
   'Note': '#f59e0b', 
@@ -63,6 +64,10 @@ const CrewSchedule = () => {
   const [activeDuplicateStatus, setActiveDuplicateStatus] = useState(null);
   const [draggedPersonId, setDraggedPersonId] = useState(null);
   
+  // Flight Modal state
+  const [selectedFlight, setSelectedFlight] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   // Add Schedule State
   const [addPilotId, setAddPilotId] = useState('');
   const [addDate, setAddDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -119,6 +124,13 @@ const CrewSchedule = () => {
     
     setFlights(JSON.parse(localStorage.getItem('userFlights') || '[]'));
     setSchedules(JSON.parse(localStorage.getItem('crewSchedules') || '{}'));
+
+    const handleStorage = () => {
+      setFlights(JSON.parse(localStorage.getItem('userFlights') || '[]'));
+      setSchedules(JSON.parse(localStorage.getItem('crewSchedules') || '{}'));
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   const saveSchedules = (newSched) => {
@@ -386,7 +398,19 @@ const CrewSchedule = () => {
                       {dayFlights.map(f => {
                          const color = f.tag === 'Emergency' ? '#ed8936' : f.tag === 'Maintenance' ? '#e53e3e' : '#8b5cf6';
                          return (
-                           <div key={f.id} style={{ backgroundColor: color, color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.7rem', marginBottom: '4px', pointerEvents: 'none' }}>
+                           <div 
+                             key={f.id} 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setSelectedFlight(f);
+                               setIsModalOpen(true);
+                             }}
+                             style={{ 
+                               backgroundColor: color, color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.7rem', marginBottom: '4px',
+                               cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                             }}
+                             title="Click to open flight card"
+                           >
                              <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
                                <Plane size={10} style={{ display: 'inline', marginRight: '4px' }}/>
                                #{f.flightNumber}
@@ -563,6 +587,50 @@ const CrewSchedule = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Full Event Modal when a flight card is clicked */}
+      {isModalOpen && selectedFlight && (
+        <EventModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedFlight(null);
+          }}
+          flight={selectedFlight}
+          onSave={(updatedFlight) => {
+            try {
+              const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+              const idx = storedFlights.findIndex(f => f.id === updatedFlight.id);
+              let newFlights;
+              if (idx >= 0) {
+                newFlights = storedFlights.map(f => f.id === updatedFlight.id ? updatedFlight : f);
+              } else {
+                newFlights = [...storedFlights, updatedFlight];
+              }
+              localStorage.setItem('userFlights', JSON.stringify(newFlights));
+              setFlights(newFlights);
+              window.dispatchEvent(new Event('storage'));
+            } catch(e) {
+              console.error(e);
+            }
+            setIsModalOpen(false);
+            setSelectedFlight(null);
+          }}
+          onDelete={(flightId) => {
+            try {
+              const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+              const newFlights = storedFlights.filter(f => f.id !== flightId);
+              localStorage.setItem('userFlights', JSON.stringify(newFlights));
+              setFlights(newFlights);
+              window.dispatchEvent(new Event('storage'));
+            } catch(e) {
+              console.error(e);
+            }
+            setIsModalOpen(false);
+            setSelectedFlight(null);
+          }}
+        />
       )}
 
     </div>
