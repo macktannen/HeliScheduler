@@ -91,13 +91,12 @@ const PilotsList = () => {
     };
   };
 
-  const getTotalLoggedHours = (pilot) => {
+  const getSignedFlightHours = (pilot) => {
     if (!pilot) return 0;
-    const baseline = parseFloat(pilot.hoursLogged || 0);
-    let signedFlightHours = 0;
+    let signedHours = 0;
 
     (flights || []).forEach(flight => {
-      // Check if flight has a signed flight log
+      // Any signed flight log (signed by pilot OR admin) triggers hours logging
       const flightLog = flight.flightLog;
       if (flightLog && flightLog.signature) {
         // Check if this pilot is assigned to the flight or any of its legs
@@ -105,17 +104,23 @@ const PilotsList = () => {
           (flight.legs && flight.legs.some(l => String(l.pilotId) === String(pilot.id)));
 
         if (isPilotAssigned) {
-          // Sum up actual flight hours from legsActuals or flightLog totals
           if (flightLog.legsActuals && Array.isArray(flightLog.legsActuals)) {
             flightLog.legsActuals.forEach(l => {
-              signedFlightHours += parseFloat(l.flightHrs || 0);
+              signedHours += parseFloat(l.flightHrs || 0);
             });
           }
         }
       }
     });
 
-    return (baseline + signedFlightHours).toFixed(1);
+    return signedHours;
+  };
+
+  const getTotalLoggedHours = (pilot) => {
+    if (!pilot) return '0.0';
+    const baseline = parseFloat(pilot.hoursLogged || 0);
+    const signedHours = getSignedFlightHours(pilot);
+    return (baseline + signedHours).toFixed(1);
   };
 
   const filteredPilots = pilots.filter(p => 
@@ -351,28 +356,30 @@ const PilotsList = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 500, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Total Logged Flight Hours</span>
-                  <span style={{ fontSize: '0.75rem', color: '#2b6cb0', fontWeight: 'bold' }}>
-                    Total: {getTotalLoggedHours(selectedPilot)} hrs
-                  </span>
-                </label>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    value={editForm.hoursLogged || 0} 
-                    onChange={(e) => setEditForm({...editForm, hoursLogged: parseFloat(e.target.value) || 0})}
-                    placeholder="Baseline Hours"
-                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                    (Baseline)
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Automatically adds flight time from completed/signed flight logs to your baseline hours.
-                </div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Total Flight Hours Logged</label>
+                {(() => {
+                  const signedHrs = getSignedFlightHours(selectedPilot);
+                  const totalHrs = (parseFloat(editForm.hoursLogged || 0) + signedHrs).toFixed(1);
+                  return (
+                    <>
+                      <input 
+                        type="number" 
+                        step="0.1"
+                        value={totalHrs} 
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setEditForm({ ...editForm, hoursLogged: Math.max(0, val - signedHrs) });
+                        }}
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}
+                      />
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {signedHrs > 0 
+                          ? `Includes ${signedHrs.toFixed(1)} hrs from signed flight logs + ${(parseFloat(editForm.hoursLogged || 0)).toFixed(1)} baseline hrs.` 
+                          : 'Pulls completed flight hours from signed flight logs automatically.'}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '0.8rem', fontWeight: 500 }}>Medical Expiration Date</label>

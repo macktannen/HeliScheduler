@@ -2,6 +2,13 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.26] - 2026-08-06
+
+### Changed
+- **Fillable Logged Flight Hours Display & Any Signature Trigger**: Updated `PilotsList.jsx` so that any valid signature (pilot or admin) on a flight log triggers logged hours calculation. The fillable input box now dynamically displays the total running flight hours (`signed hours + baseline hours`), allowing direct adjustment while preserving automated flight time addition.
+
+---
+
 ## [v0.1.25] - 2026-08-06
 
 ### Added
