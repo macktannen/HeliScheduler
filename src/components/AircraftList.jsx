@@ -54,11 +54,22 @@ const AircraftList = () => {
     // Sort by tail number
     storedAircraft.sort((a, b) => a.id.localeCompare(b.id));
     setAircraft(storedAircraft);
+
+    if (selectedAircraft) {
+      const updatedSel = storedAircraft.find(a => a.id === selectedAircraft.id);
+      if (updatedSel) {
+        setSelectedAircraft(updatedSel);
+        setEditForm(prev => prev ? { ...updatedSel, originalId: updatedSel.id } : null);
+      }
+    }
   };
 
   useEffect(() => {
     loadData();
-  }, []);
+    const handleStorage = () => loadData();
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [selectedAircraft?.id]);
 
   const filteredAircraft = aircraft.filter(a => 
     a.id.toLowerCase().includes(search.toLowerCase()) || 

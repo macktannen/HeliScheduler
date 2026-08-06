@@ -2,6 +2,19 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.31] - 2026-08-06
+
+### Added
+- **Flight Log & Fleet Aircraft Meter Synchronization**:
+  - Dynamically synchronized the Flight Log card totals with the live Fleet Aircraft management page (`userAircraft`).
+  - Added live meter syncing for unsigned flight logs so opening any flight card always displays the latest live `Before` meter figures from the aircraft logbook.
+  - Ensured signing a flight updates `totalHours`, `landings`, `engine1Hours`, `engine1Cycles`, `engine2Hours`, `engine2Cycles`, and `hobbs` in real-time across both pages.
+- **Twin Engine Leg Actuals Support**:
+  - Updated `FlightLogTab.jsx` to render separate **Engine 1 (Hrs)**, **Engine 2 (Hrs)**, **Eng 1 Cyc**, and **Eng 2 Cyc** input fields when a twin-engine aircraft (`dualEngine`) is selected.
+  - Mirrored the exact 7 boxes of logbook meters (Aircraft Hours, Aircraft Landings, Engine 1 Hours, Engine 1 Cycles, Engine 2 Hours, Engine 2 Cycles, Hobbs) between `FlightLogTab` and `AircraftList`.
+
+---
+
 ## [v0.1.30] - 2026-08-06
 
 ### Added
