@@ -2,6 +2,13 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.65] - 2026-08-07
+
+### Changed
+- **Aircraft Status Display**: Replaced the static status dropdown on the Aircraft Fleet Management page with a dynamic, read-only display that reflects the aircraft's calendar status for the current day. This provides immediate visibility into whether an aircraft is available, scheduled for flights, or in maintenance today, similar to the pilot status page.
+
+---
+
 ## [v0.1.64] - 2026-08-07
 
 ### Added

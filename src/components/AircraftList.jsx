@@ -18,6 +18,7 @@ const AircraftList = () => {
   const canEditOps = permCan(currentUser, 'editOperationalData');
 
   const [aircraft, setAircraft] = useState([]);
+  const [flights, setFlights] = useState([]);
   const [saved, setSaved] = useState(false);
 
   const [search, setSearch] = useState('');
@@ -62,6 +63,10 @@ const AircraftList = () => {
         setEditForm(prev => prev ? { ...updatedSel, originalId: updatedSel.id } : null);
       }
     }
+    
+    try {
+      setFlights(JSON.parse(localStorage.getItem('userFlights') || '[]'));
+    } catch(e) {}
   };
 
   useEffect(() => {
@@ -75,6 +80,54 @@ const AircraftList = () => {
     a.id.toLowerCase().includes(search.toLowerCase()) || 
     (a.model && a.model.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const getTodayAircraftStatus = (ac) => {
+    if (!ac) return { status: 'Available', flightText: null, hasFlight: false };
+    
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+
+    const todayFlights = (flights || []).filter(f => {
+      if (f.aircraftId !== ac.id) return false;
+      const fDate = f.date ? f.date.split('T')[0] : '';
+      if (!f.legs || f.legs.length === 0) {
+        return fDate === todayStr;
+      }
+      return f.legs.some(l => {
+        const lDate = l.date || fDate;
+        return lDate === todayStr;
+      });
+    });
+
+    if (todayFlights.length > 0) {
+      const isMaintenance = todayFlights.some(f => f.tag === 'Maintenance');
+      const flightInfo = todayFlights.map(f => `#${f.flightNumber}: ${f.title}`).join(', ');
+      
+      if (isMaintenance) {
+         return {
+           status: 'Maintenance',
+           hasFlight: true,
+           flightText: flightInfo
+         };
+      }
+      return {
+        status: 'Scheduled',
+        hasFlight: true,
+        flightText: flightInfo
+      };
+    }
+
+    const baseStatus = ac.status === 'Maintenance' || ac.status === 'Reserved' ? ac.status : 'Available';
+
+    return {
+      status: baseStatus,
+      hasFlight: false,
+      flightText: null
+    };
+  };
 
   const handleSelect = (ac) => {
     setSelectedAircraft(ac);
@@ -211,36 +264,39 @@ const AircraftList = () => {
               No aircraft found.
             </div>
           ) : (
-            filteredAircraft.map(ac => (
-              <div 
-                key={ac.id}
-                onClick={() => handleSelect(ac)}
-                style={{
-                  padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                  backgroundColor: selectedAircraft?.id === ac.id ? 'var(--primary-light)' : 'white',
-                  borderLeft: selectedAircraft?.id === ac.id ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <strong style={{ fontSize: '0.875rem' }}>{ac.id}</strong>
-                  <span style={{ 
-                    fontSize: '0.65rem', 
-                    padding: '2px 6px', 
-                    borderRadius: '10px',
-                    backgroundColor: ac.status === 'Available' ? '#c6f6d5' : ac.status === 'Maintenance' ? '#fed7d7' : '#feebc8',
-                    color: ac.status === 'Available' ? '#22543d' : ac.status === 'Maintenance' ? '#822727' : '#7b341e'
-                  }}>
-                    {ac.status}
-                  </span>
+            filteredAircraft.map(ac => {
+              const statusObj = getTodayAircraftStatus(ac);
+              return (
+                <div 
+                  key={ac.id}
+                  onClick={() => handleSelect(ac)}
+                  style={{
+                    padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    backgroundColor: selectedAircraft?.id === ac.id ? 'var(--primary-light)' : 'white',
+                    borderLeft: selectedAircraft?.id === ac.id ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <strong style={{ fontSize: '0.875rem' }}>{ac.id}</strong>
+                    <span style={{ 
+                      fontSize: '0.65rem', 
+                      padding: '2px 6px', 
+                      borderRadius: '10px',
+                      backgroundColor: statusObj.status === 'Available' ? '#c6f6d5' : statusObj.status === 'Maintenance' ? '#fed7d7' : statusObj.status === 'Scheduled' ? '#e2e8f0' : '#feebc8',
+                      color: statusObj.status === 'Available' ? '#22543d' : statusObj.status === 'Maintenance' ? '#822727' : statusObj.status === 'Scheduled' ? '#4a5568' : '#7b341e'
+                    }}>
+                      {statusObj.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
+                    <span>{ac.model}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{ac.totalHours} hrs</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{ac.maxCruiseSpeed} kts</span>
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-color)', marginTop: '2px', display: 'flex', gap: '10px' }}>
-                  <span>{ac.model}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>{ac.totalHours} hrs</span>
-                  <span style={{ color: 'var(--text-muted)' }}>{ac.maxCruiseSpeed} kts</span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -285,17 +341,50 @@ const AircraftList = () => {
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Status</label>
-                <select 
-                  value={editForm.status || 'Available'}
-                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                  disabled={!canEditStatus}
-                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.875rem', backgroundColor: canEditStatus ? 'white' : '#f7fafc', cursor: canEditStatus ? 'pointer' : 'not-allowed' }}
-                >
-                  <option value="Available">Available</option>
-                  <option value="Maintenance">Maintenance (AOG)</option>
-                  <option value="Reserved">Reserved</option>
-                </select>
+                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Today's Schedule Status</label>
+                {(() => {
+                  const statusObj = getTodayAircraftStatus(selectedAircraft);
+                  const isMaintenance = statusObj.status === 'Maintenance';
+                  const isScheduled = statusObj.status === 'Scheduled';
+                  const isAvailable = statusObj.status === 'Available';
+                  return (
+                    <div style={{
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: isAvailable ? '#f0fff4' : isMaintenance ? '#fff5f5' : isScheduled ? '#ebf8ff' : '#f7fafc',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px',
+                      height: '38px',
+                      justifyContent: 'center'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          fontWeight: 'bold',
+                          color: isAvailable ? '#276749' : isMaintenance ? '#9b2c2c' : isScheduled ? '#2b6cb0' : '#4a5568'
+                        }}>
+                          {statusObj.status}
+                        </span>
+                        {statusObj.hasFlight && (
+                          <span style={{ fontSize: '0.75rem', backgroundColor: '#edf2f7', color: 'var(--primary-color)', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                            Flight Scheduled
+                          </span>
+                        )}
+                      </div>
+                      {statusObj.hasFlight ? (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--primary-color)', marginTop: '2px', fontWeight: 500 }}>
+                          ✈️ {statusObj.flightText}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          No scheduled flights today
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
