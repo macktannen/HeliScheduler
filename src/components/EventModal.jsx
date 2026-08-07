@@ -708,7 +708,12 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     } else if (field === 'pilots') {
        const pilotArr = value || [];
        leg.pilots = pilotArr;
-       leg.pilotId = pilotArr[0] || '';
+       const picId = Object.keys(leg.pilotRoles || {}).find(id => leg.pilotRoles[id] === 'PIC');
+       leg.pilotId = picId || pilotArr[0] || '';
+    } else if (field === 'pilotRoles') {
+       leg.pilotRoles = value || {};
+       const picId = Object.keys(leg.pilotRoles).find(id => leg.pilotRoles[id] === 'PIC');
+       leg.pilotId = picId || (leg.pilots && leg.pilots[0]) || '';
     } else if (field === 'pilotId') {
        leg.pilotId = value;
        if (value && (!leg.pilots || leg.pilots.length === 0)) {
@@ -717,6 +722,42 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     } else if (field === 'passengers') {
        leg.passengers = value;
     }
+    
+    newLegs[index] = leg;
+    setLegs(newLegs);
+  };
+
+  const handleTogglePilotRole = (index, pId) => {
+    let newLegs = [...legs];
+    const leg = { ...newLegs[index] };
+    const currentRoles = { ...(leg.pilotRoles || {}) };
+    const currentRole = currentRoles[pId];
+
+    let newRole = null;
+    if (!currentRole) {
+      newRole = 'PIC';
+    } else if (currentRole === 'PIC') {
+      newRole = 'SIC';
+    } else if (currentRole === 'SIC') {
+      newRole = null;
+    }
+
+    if (newRole === 'PIC') {
+      Object.keys(currentRoles).forEach(id => {
+        if (currentRoles[id] === 'PIC') {
+          currentRoles[id] = 'SIC';
+        }
+      });
+      currentRoles[pId] = 'PIC';
+    } else if (newRole === 'SIC') {
+      currentRoles[pId] = 'SIC';
+    } else {
+      delete currentRoles[pId];
+    }
+
+    leg.pilotRoles = currentRoles;
+    const picId = Object.keys(currentRoles).find(id => currentRoles[id] === 'PIC');
+    leg.pilotId = picId || (leg.pilots && leg.pilots[0]) || '';
     
     newLegs[index] = leg;
     setLegs(newLegs);
@@ -1110,7 +1151,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                         {/* Pilot / Crew */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>
-                            Pilots / Crew ({(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).length})
+                            {(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).length > 1 ? 'Pilots' : 'Pilot'} / Crew ({(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).length})
                           </label>
                           <select 
                             value="" 
@@ -1119,7 +1160,15 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                               const pId = e.target.value;
                               const current = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
                               if (!current.includes(pId)) {
-                                handleUpdateLeg(index, 'pilots', [...current, pId]);
+                                const updatedPilots = [...current, pId];
+                                const updatedRoles = { ...(leg.pilotRoles || {}) };
+                                if (!Object.values(updatedRoles).includes('PIC')) {
+                                  updatedRoles[pId] = 'PIC';
+                                } else {
+                                  updatedRoles[pId] = 'SIC';
+                                }
+                                handleUpdateLeg(index, 'pilots', updatedPilots);
+                                handleUpdateLeg(index, 'pilotRoles', updatedRoles);
                               }
                             }}
                             style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.8rem', backgroundColor: 'white' }}
@@ -1131,13 +1180,49 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
                               {(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).map(pId => {
                                 const pilot = pilotsList.find(p => p.id === pId || p.name === pId);
+                                const role = (leg.pilotRoles || {})[pId];
+                                const isPIC = role === 'PIC';
+                                const isSIC = role === 'SIC';
+
+                                const badgeBg = isPIC ? '#fefcbf' : isSIC ? '#ebf8ff' : '#e2e8f0';
+                                const badgeBorder = isPIC ? '1px solid #d69e2e' : isSIC ? '1px solid #3182ce' : '1px solid #cbd5e0';
+                                const badgeTextColor = isPIC ? '#744210' : isSIC ? '#2b6cb0' : 'var(--text-color)';
+                                const roleText = isPIC ? ' [PIC]' : isSIC ? ' [SIC]' : '';
+
                                 return (
-                                  <div key={pId} style={{ display: 'flex', alignItems: 'center', backgroundColor: '#e2e8f0', color: 'var(--primary-color)', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>
-                                    {pilot ? pilot.name : pId}
-                                    <X size={10} style={{ marginLeft: '4px', cursor: 'pointer' }} onClick={() => {
-                                      const current = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
-                                      handleUpdateLeg(index, 'pilots', current.filter(p => p !== pId));
-                                    }} />
+                                  <div 
+                                    key={pId} 
+                                    onClick={() => handleTogglePilotRole(index, pId)}
+                                    title="Click to toggle PIC / SIC / Crew role"
+                                    style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      backgroundColor: badgeBg, 
+                                      border: badgeBorder,
+                                      color: badgeTextColor, 
+                                      fontWeight: 'bold', 
+                                      padding: '3px 8px', 
+                                      borderRadius: '4px', 
+                                      fontSize: '0.7rem',
+                                      cursor: 'pointer',
+                                      userSelect: 'none',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                  >
+                                    <span>{pilot ? pilot.name : pId}{roleText}</span>
+                                    <X 
+                                      size={10} 
+                                      style={{ marginLeft: '6px', cursor: 'pointer', opacity: 0.7 }} 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentPilots = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
+                                        const updatedPilots = currentPilots.filter(p => p !== pId);
+                                        const updatedRoles = { ...(leg.pilotRoles || {}) };
+                                        delete updatedRoles[pId];
+                                        handleUpdateLeg(index, 'pilots', updatedPilots);
+                                        handleUpdateLeg(index, 'pilotRoles', updatedRoles);
+                                      }} 
+                                    />
                                   </div>
                                 );
                               })}

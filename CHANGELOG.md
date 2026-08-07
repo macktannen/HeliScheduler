@@ -2,6 +2,17 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.40] - 2026-08-07
+
+### Added
+- **Clickable PIC / SIC Pilot Role Toggling**:
+  - Clicking an assigned pilot tag badge in `EventModal.jsx` cycles their role through `[PIC]` (Gold highlight) -> `[SIC]` (Blue highlight) -> `Crew` (Neutral).
+  - Linked explicit `PIC` and `SIC` role designations directly into `FlightLogTab.jsx` for log summary reporting.
+- **Dynamic "Pilots" Card Label**:
+  - Updated `CalendarView.jsx` flight cards to display **Pilots:** when more than 1 pilot is assigned to a leg, and **Pilot:** when 1 pilot is assigned.
+
+---
+
 ## [v0.1.39] - 2026-08-07
 
 ### Added

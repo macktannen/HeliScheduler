@@ -428,13 +428,24 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
              {legs.map((leg, index) => {
                 const act = log.legsActuals[index] || {};
                 const legPilots = leg.pilots && leg.pilots.length > 0 ? leg.pilots : (leg.pilotId ? [leg.pilotId] : []);
+                const roles = leg.pilotRoles || {};
+
+                let picId = Object.keys(roles).find(id => roles[id] === 'PIC');
+                if (!picId && legPilots.length > 0) picId = legPilots[0];
+
+                let sicIds = Object.keys(roles).filter(id => roles[id] === 'SIC');
+                if (sicIds.length === 0 && legPilots.length > 1) {
+                  sicIds = legPilots.filter(id => id !== picId);
+                }
+
                 const getPilotDisplayName = (pId) => {
                   if (!pId) return '';
                   const p = pilotsList?.find(item => item.id === pId || item.name === pId);
                   return p ? p.name : pId;
                 };
-                const picName = legPilots[0] ? getPilotDisplayName(legPilots[0]) : 'Unknown';
-                const sicName = legPilots.slice(1).map(getPilotDisplayName).join(', ');
+
+                const picName = picId ? getPilotDisplayName(picId) : 'Unknown';
+                const sicName = sicIds.map(getPilotDisplayName).join(', ');
 
                 return (
                   <tr key={index}>
