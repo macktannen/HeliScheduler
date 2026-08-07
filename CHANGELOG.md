@@ -2,6 +2,14 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.49] - 2026-08-07
+
+### Fixed
+- **Updated AI Vision Endpoint**:
+  - Replaced endpoint URL to use `gemini-1.5-flash` in `pdfParserService.js` and `SettingsView.jsx`, resolving 404 API model deprecation error.
+
+---
+
 ## [v0.1.48] - 2026-08-07
 
 ### Added
