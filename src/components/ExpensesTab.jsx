@@ -59,12 +59,32 @@ const CategoryCombobox = ({ value, onChange, options, style }) => {
   );
 };
 
-const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendorsList = [], flightDate = '' }) => {
+const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendorsList = [], flightDate = '', flight = null }) => {
   const fileInputRef = useRef(null);
   const [uploadingExpId, setUploadingExpId] = useState(null);
   const [viewingExpId, setViewingExpId] = useState(null);
   const [loadedReceipts, setLoadedReceipts] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  // Helper to persist expenses to localStorage userFlights for current flight if open
+  const persistExpensesToFlight = (updatedExpenses) => {
+    if (flight && flight.id) {
+      try {
+        const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+        const updatedFlights = storedFlights.map(f => {
+          if (String(f.id) === String(flight.id)) {
+            return { ...f, expenses: updatedExpenses };
+          }
+          return f;
+        });
+        localStorage.setItem('userFlights', JSON.stringify(updatedFlights));
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {
+        console.error("Failed to persist expenses to localStorage", e);
+      }
+    }
+  };
+
   const handleHeaderClick = (key) => {
     setSortConfig(prev => {
       if (prev.key === key) {
@@ -73,26 +93,23 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
       return { key, direction: 'asc' };
     });
   };
+
   const sortedExpenses = useMemo(() => {
     if (!sortConfig.key) return expenses;
     const sorted = [...expenses];
     sorted.sort((a, b) => {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
-      if (aVal === undefined) aVal = '';
-      if (bVal === undefined) bVal = '';
-      if (sortConfig.key === 'amount') {
-        return (parseFloat(aVal) - parseFloat(bVal)) * (sortConfig.direction === 'asc' ? 1 : -1);
-      }
-      if (sortConfig.key === 'date') {
-        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return (aVal - bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
       }
       return aVal.toString().localeCompare(bVal.toString()) * (sortConfig.direction === 'asc' ? 1 : -1);
     });
     return sorted;
-  }, [expenses, sortConfig]);  
+  }, [expenses, sortConfig]);
+
   useEffect(() => {
     if (viewingExpId && viewingExpId !== 'demo') {
       const exp = expenses.find(x => x.id === viewingExpId);
@@ -204,10 +221,6 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
   }, [legs]);
   const defaultDate = flightDate || new Date().toISOString().split('T')[0];
 
-  // If expenses array is totally empty on mount, you can leave it empty or initialize one row.
-  // The user requested NO default multiple lines, so we just let it be empty if empty.
-  // But to be safe, if we need it completely empty we just do nothing in useEffect.
-
   const handleAdd = () => {
     setExpenses([...expenses, { id: Date.now(), category: '', vendor: '', amount: '', description: '', date: defaultDate, payer: '', location: flightAirports[0] || '', fuelType: '', gallons: '', purchaser: aircraftId, receiptCount: 0, _dirty: true, _saved: false }]);
   };
@@ -318,8 +331,9 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
       _saved: true
     };
 
-    // Auto-save on AI upload / import: update expenses array & persist if in flight context
-    setExpenses(prev => [...prev, newExp]);
+    const nextExpenses = [...expenses, newExp];
+    setExpenses(nextExpenses);
+    persistExpensesToFlight(nextExpenses);
   };
 
   const handleUpdate = (id, field, value) => {
@@ -327,11 +341,15 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
   };
 
   const handleSaveRow = (id) => {
-    setExpenses(expenses.map(e => e.id === id ? { ...e, _dirty: false, _saved: true } : e));
+    const updatedExpenses = expenses.map(e => e.id === id ? { ...e, _dirty: false, _saved: true } : e);
+    setExpenses(updatedExpenses);
+    persistExpensesToFlight(updatedExpenses);
   };
 
   const handleRemove = (id) => {
-    setExpenses(expenses.filter(e => e.id !== id));
+    const updatedExpenses = expenses.filter(e => e.id !== id);
+    setExpenses(updatedExpenses);
+    persistExpensesToFlight(updatedExpenses);
   };
 
   const handleDeleteReceipt = async (expId, fileIndex) => {

@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.62] - 2026-08-07
+
+### Fixed
+- **Instant Expense Line Persistence**:
+  - Fixed an issue where clicking the line-level Save icon updated the checkmark state locally in component memory but didn't write to `localStorage` unless the overall flight card Save button was also pressed.
+  - Now, clicking the line-level Save icon (or deleting/importing a line) immediately writes the updated expense array directly to `localStorage` and broadcasts a `storage` event, ensuring edits are fully preserved even if you close the card without pressing the main Save button.
+
+---
+
 ## [v0.1.61] - 2026-08-07
 
 ### Improved

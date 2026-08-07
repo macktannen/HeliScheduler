@@ -1447,7 +1447,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
           </div>
         ) : (
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-             <ExpensesTab expenses={expenses} setExpenses={setExpenses} legs={legs} aircraftId={aircraftId} vendorsList={vendorsList} flightDate={date} />
+             <ExpensesTab expenses={expenses} setExpenses={setExpenses} legs={legs} aircraftId={aircraftId} vendorsList={vendorsList} flightDate={date} flight={flight} />
           </div>
         )}
 
