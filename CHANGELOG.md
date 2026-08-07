@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.60] - 2026-08-07
+
+### Improved
+- **Flight Card Save Sync for Expenses**:
+  - Clicking the overall **Save Flight** button in the flight card now automatically marks all expense rows as clean and saved.
+  - Switches any pending blue line-level Save icons to green check marks (**✓**) across the entire expense tab upon flight save.
+
+---
+
 ## [v0.1.59] - 2026-08-07
 
 ### Improved

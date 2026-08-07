@@ -881,6 +881,14 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     const firstLeg = legs[0] || {};
     const passengers = firstLeg.passengers || [];
 
+    // Mark all expenses as saved/clean when saving the entire flight card
+    const savedExpenses = expenses.map(exp => ({
+      ...exp,
+      _dirty: false,
+      _saved: true
+    }));
+    setExpenses(savedExpenses);
+
     onSave({
       id: flight ? flight.id : undefined,
       flightNumber,
@@ -896,7 +904,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       passengers,
       pilotId: firstLeg.pilotId || '',
       flightLog,
-      expenses
+      expenses: savedExpenses
     });
     
     setIsSaved(false);
