@@ -2,6 +2,13 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.64] - 2026-08-07
+
+### Added
+- **Expanded Expenses Overview Table**: Added new columns for "Aircraft", "Account", "Payment" (Payer), "Fuel Provider" (Fuel Type), and "Purchaser" to the main Expenses Overview table, matching the fields available in the flight card's expenses tab.
+
+---
+
 ## [v0.1.63] - 2026-08-07
 
 ### Fixed

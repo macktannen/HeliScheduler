@@ -10,7 +10,7 @@ import AircraftList from './components/AircraftList';
 import PassengersList from './components/PassengersList';
 import CrewView from './components/CrewView';
 import { initDataSync } from './services/dataSyncService';
-const APP_VERSION = "v0.1.63";
+const APP_VERSION = "v0.1.64";
 import AccountsContactsView from './components/AccountsContactsView';
 import ExpensesPage from './components/ExpensesPage';
 import SettingsView from './components/SettingsView';

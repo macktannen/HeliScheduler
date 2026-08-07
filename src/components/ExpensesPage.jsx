@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { DollarSign, Search, Calendar, FileText, Building, Plus, Trash2, Edit2, Check, X, Sparkles } from 'lucide-react';
-import { mockVendors } from '../data';
+import { mockVendors, mockAccounts } from '../data';
 import EventModal from './EventModal';
 import AIInvoiceUploader from './AIInvoiceUploader';
 
@@ -50,6 +50,7 @@ const ExpensesPage = () => {
   };
   // Vendors State
   const [vendors, setVendors] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [editingVendorId, setEditingVendorId] = useState(null);
   const [editForm, setEditForm] = useState({ vendorId: '', name: '', category: '', address: '', phone: '', email: '', poc: '' });
 
@@ -66,6 +67,8 @@ const ExpensesPage = () => {
               flightNumber: flight.flightNumber || 'Unknown',
               flightTitle: flight.title || 'Untitled',
               flightDate: flight.date || exp.date,
+              flightAircraft: flight.aircraftId || '',
+              flightAccount: flight.accountId || '',
               isPaid: exp.isPaid || false
             });
           });
@@ -85,6 +88,13 @@ const ExpensesPage = () => {
       if (storedVendors && storedVendors.length > 0) setVendors(storedVendors);
       else setVendors(mockVendors);
     } catch(e) { setVendors(mockVendors); }
+
+    // Load Accounts
+    try {
+      const storedAccounts = JSON.parse(localStorage.getItem('userAccounts'));
+      if (storedAccounts && storedAccounts.length > 0) setAccounts(storedAccounts);
+      else setAccounts(mockAccounts);
+    } catch(e) { setAccounts(mockAccounts); }
   }, []);
 
   // Listen for storage events to refresh expenses when line-level saves occur
@@ -429,8 +439,13 @@ const ExpensesPage = () => {
                   <tr>
                     <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('date')}>Date</th>
                     <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('flightNumber')}>Trip</th>
+                    <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('flightAircraft')}>Aircraft</th>
+                    <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('flightAccount')}>Account</th>
                     <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('vendor')}>Vendor</th>
                     <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('category')}>Category</th>
+                    <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('payer')}>Payment</th>
+                    <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('fuelType')}>Fuel Provider</th>
+                    <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('purchaser')}>Purchaser</th>
                     <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleHeaderClick('description')}>Notes</th>
                     <th style={{ padding: '12px', textAlign: 'center', cursor: 'pointer' }} onClick={() => handleHeaderClick('isPaid')}>Paid</th>
                     <th style={{ padding: '12px', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleHeaderClick('amount')}>Amount</th>
@@ -456,6 +471,14 @@ const ExpensesPage = () => {
                           <div style={{ fontWeight: 'bold', color: 'var(--primary-color)' }}>{exp.flightNumber}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{exp.flightTitle}</div>
                         </td>
+                        <td style={{ padding: '12px' }}>{exp.flightAircraft || '-'}</td>
+                        <td style={{ padding: '12px' }}>
+                          {(() => {
+                            if (!exp.flightAccount) return '-';
+                            const act = accounts.find(a => a.id === exp.flightAccount || a.name === exp.flightAccount);
+                            return act ? act.name : exp.flightAccount;
+                          })()}
+                        </td>
                         <td style={{ padding: '12px', fontWeight: 500 }}>
                           {(() => {
                             const foundVendor = vendors.find(v => v.vendorId === exp.vendor || v.name === exp.vendor);
@@ -474,7 +497,12 @@ const ExpensesPage = () => {
                             {exp.category}
                           </span>
                         </td>
-                        <td style={{ padding: '12px' }}>{exp.description || '-'}</td>
+                        <td style={{ padding: '12px' }}>{exp.payer || '-'}</td>
+                        <td style={{ padding: '12px' }}>{exp.fuelType || '-'}</td>
+                        <td style={{ padding: '12px' }}>{exp.purchaser || '-'}</td>
+                        <td style={{ padding: '12px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={exp.description}>
+                          {exp.description || '-'}
+                        </td>
                         <td style={{ padding: '12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                           <input 
                             type="checkbox" 
