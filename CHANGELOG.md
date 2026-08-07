@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.48] - 2026-08-07
+
+### Added
+- **AI & Integrations Settings Panel**:
+  - Added a dedicated **AI & Integrations** tab in `SettingsView.jsx` for managing and testing Google Gemini API keys.
+  - Included 1-click test button (`Test Connection`) to instantly verify key connectivity and status.
+
+---
+
 ## [v0.1.47] - 2026-08-07
 
 ### Added
