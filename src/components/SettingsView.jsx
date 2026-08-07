@@ -164,10 +164,11 @@ const SettingsView = () => {
     setAiMsg('');
     try {
       const candidateEndpoints = [
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
         'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
       ];
       let res = null;
       let lastErrText = '';
@@ -180,7 +181,7 @@ const SettingsView = () => {
         if (testRes.status === 404 || testRes.status === 429) {
           const errBody = await testRes.clone().text().catch(() => '');
           if (testRes.status === 404 || errBody.includes('limit: 0')) {
-            lastErrText = `(${testRes.status}) on ${ep}: ${errBody}`;
+            lastErrText = errBody || `Model unavailable at ${ep}`;
             continue;
           }
         }
@@ -191,10 +192,11 @@ const SettingsView = () => {
       if (res && res.ok) {
         setAiMsg({ type: 'success', text: '✅ API Key Connection Verified Successfully!' });
       } else if (res) {
-        const errData = await res.json();
-        setAiMsg({ type: 'error', text: `❌ API Error (${res.status}): ${errData.error?.message || 'Invalid Key'}` });
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData.error?.message || 'Invalid or revoked API key';
+        setAiMsg({ type: 'error', text: `❌ API Key Error (${res.status}): ${msg}. Please generate a new key at aistudio.google.com.` });
       } else {
-        setAiMsg({ type: 'error', text: `❌ Connection failed: ${lastErrText}` });
+        setAiMsg({ type: 'error', text: `❌ API Key Error: Please check your key from aistudio.google.com (${lastErrText || 'All models unavailable'})` });
       }
     } catch(err) {
       setAiMsg({ type: 'error', text: `❌ Connection failed: ${err.message}` });

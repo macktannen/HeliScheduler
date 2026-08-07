@@ -103,10 +103,11 @@ Return ONLY raw JSON, with no markdown formatting.
   };
 
   const candidateEndpoints = [
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
     'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
   ];
 
   let response = null;
@@ -122,7 +123,7 @@ Return ONLY raw JSON, with no markdown formatting.
       if (res.status === 404 || res.status === 429) {
         const errBody = await res.clone().text().catch(() => '');
         if (res.status === 404 || errBody.includes('limit: 0')) {
-          lastErrorText = `(${res.status}) on ${ep}: ${errBody}`;
+          lastErrorText = errBody || `Model unavailable at ${ep}`;
           continue;
         }
       }
@@ -134,8 +135,11 @@ Return ONLY raw JSON, with no markdown formatting.
   }
 
   if (!response || !response.ok) {
-    const errText = response ? await response.text() : lastErrorText;
-    throw new Error(`AI Invoice Parsing error (${response ? response.status : 404}): ${errText}`);
+    const rawErr = response ? await response.text() : lastErrorText;
+    if (rawErr.includes('API_KEY_INVALID') || rawErr.includes('API key not valid')) {
+      throw new Error('Invalid Gemini API key. Please generate a new free key at aistudio.google.com.');
+    }
+    throw new Error(`API Key Connection Error: Please verify your key at aistudio.google.com.`);
   }
 
   const data = await response.json();

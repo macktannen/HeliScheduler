@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.52] - 2026-08-07
+
+### Fixed
+- **API Endpoint Diagnostics & Model Ordering**:
+  - Placed standard **`v1beta/models/gemini-1.5-flash`** at the top of candidate endpoints in `pdfParserService.js` and `SettingsView.jsx`.
+  - Added clean error diagnostics for invalid or uninitialized API keys to guide users to `aistudio.google.com`.
+
+---
+
 ## [v0.1.51] - 2026-08-07
 
 ### Fixed
