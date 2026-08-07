@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Check, X, Upload, FileText, Trash2, Sparkles } from 'lucide-react';
+import { Plus, Check, Save, X, Upload, FileText, Trash2, Sparkles } from 'lucide-react';
 import { FileStorageService } from '../services/FileStorageService';
 import AIInvoiceUploader from './AIInvoiceUploader';
 
@@ -208,7 +208,7 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
   // But to be safe, if we need it completely empty we just do nothing in useEffect.
 
   const handleAdd = () => {
-    setExpenses([...expenses, { id: Date.now(), category: '', vendor: '', amount: '', description: '', date: defaultDate, payer: '', location: '', fuelType: '', gallons: '', purchaser: aircraftId, receiptCount: 0 }]);
+    setExpenses([...expenses, { id: Date.now(), category: '', vendor: '', amount: '', description: '', date: defaultDate, payer: '', location: flightAirports[0] || '', fuelType: '', gallons: '', purchaser: aircraftId, receiptCount: 0, _dirty: true, _saved: false }]);
   };
 
   const handleAutoFillParsedExpense = async (parsedData) => {
@@ -312,13 +312,21 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
       receiptFiles,
       receiptCount,
       hasReceipt: receiptCount > 0,
-      autoParsed: true
+      autoParsed: true,
+      _dirty: false,
+      _saved: true
     };
-    setExpenses([...expenses, newExp]);
+
+    // Auto-save on AI upload / import: update expenses array & persist if in flight context
+    setExpenses(prev => [...prev, newExp]);
   };
 
   const handleUpdate = (id, field, value) => {
-    setExpenses(expenses.map(e => e.id === id ? { ...e, [field]: value } : e));
+    setExpenses(expenses.map(e => e.id === id ? { ...e, [field]: value, _dirty: true } : e));
+  };
+
+  const handleSaveRow = (id) => {
+    setExpenses(expenses.map(e => e.id === id ? { ...e, _dirty: false, _saved: true } : e));
   };
 
   const handleRemove = (id) => {
@@ -416,10 +424,19 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
               return (
                 <tr key={exp.id} style={{ borderBottom: '1px solid #edf2f7' }}>
                   <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                    {filled && valid ? (
-                      <Check size={18} color="#48bb78" />
+                    {exp._dirty || (!exp._saved && exp._saved !== undefined) || (!exp.autoParsed && !exp._saved && (exp.vendor || exp.amount || exp.category)) ? (
+                      <button 
+                        type="button" 
+                        onClick={() => handleSaveRow(exp.id)} 
+                        style={{ background: '#3182ce', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}
+                        title="Click to Save changes to this expense line"
+                      >
+                        <Save size={14} />
+                      </button>
+                    ) : filled && valid ? (
+                      <Check size={18} color="#48bb78" title="Expense saved" />
                     ) : (
-                      <button type="button" onClick={handleAdd} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
+                      <button type="button" onClick={handleAdd} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }} title="Add expense">
                         <Plus size={18} color="#cbd5e0" />
                       </button>
                     )}

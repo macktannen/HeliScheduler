@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.59] - 2026-08-07
+
+### Improved
+- **Expense Line Save Icon & Auto-Save Overhaul**:
+  - Auto-fills from PDF / Receipt or AI uploader now automatically save expenses upon import/upload.
+  - Added line-level **Save** button (blue disk icon) that appears in the first column whenever an expense line is newly added or edited.
+  - Clicking the Save icon saves changes for that line specifically and updates the icon to a green check mark (**✓**) to confirm saved state.
+
+---
+
 ## [v0.1.58] - 2026-08-07
 
 ### Fixed
