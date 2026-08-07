@@ -103,9 +103,9 @@ Return ONLY raw JSON, with no markdown formatting.
   };
 
   const candidateEndpoints = [
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
     'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
   ];
 
@@ -119,9 +119,12 @@ Return ONLY raw JSON, with no markdown formatting.
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });
-      if (res.status === 404) {
-        lastErrorText = `404 on ${ep}`;
-        continue;
+      if (res.status === 404 || res.status === 429) {
+        const errBody = await res.clone().text().catch(() => '');
+        if (res.status === 404 || errBody.includes('limit: 0')) {
+          lastErrorText = `(${res.status}) on ${ep}: ${errBody}`;
+          continue;
+        }
       }
       response = res;
       break;

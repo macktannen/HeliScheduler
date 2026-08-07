@@ -164,9 +164,9 @@ const SettingsView = () => {
     setAiMsg('');
     try {
       const candidateEndpoints = [
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
         'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
       ];
       let res = null;
@@ -177,9 +177,12 @@ const SettingsView = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ parts: [{ text: 'Ping' }] }] })
         });
-        if (testRes.status === 404) {
-          lastErrText = 'Model endpoint not found (404)';
-          continue;
+        if (testRes.status === 404 || testRes.status === 429) {
+          const errBody = await testRes.clone().text().catch(() => '');
+          if (testRes.status === 404 || errBody.includes('limit: 0')) {
+            lastErrText = `(${testRes.status}) on ${ep}: ${errBody}`;
+            continue;
+          }
         }
         res = testRes;
         break;

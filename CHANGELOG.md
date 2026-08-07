@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.51] - 2026-08-07
+
+### Fixed
+- **Free-Tier Model Priority & Quota Routing**:
+  - Re-ordered model candidate list to prioritize **`v1/models/gemini-1.5-flash`** (the 100% free model with 1,500 requests/day).
+  - Enhanced candidate loop in `pdfParserService.js` and `SettingsView.jsx` to automatically bypass `429 (limit: 0)` errors from unbilled preview models (e.g. `gemini-2.0-flash`), routing directly to active free-tier endpoints.
+
+---
+
 ## [v0.1.50] - 2026-08-07
 
 ### Fixed
