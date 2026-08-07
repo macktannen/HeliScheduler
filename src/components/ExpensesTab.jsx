@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Check, X, Upload, FileText, Trash2 } from 'lucide-react';
+import { Plus, Check, X, Upload, FileText, Trash2, Sparkles } from 'lucide-react';
 import { FileStorageService } from '../services/FileStorageService';
+import AIInvoiceUploader from './AIInvoiceUploader';
 
 const ALL_CATEGORIES = [
   'Catering', 'Cleaning / Detailing', 'Crew Meal', 'Customs / Border Fees', 
@@ -208,6 +209,25 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
 
   const handleAdd = () => {
     setExpenses([...expenses, { id: Date.now(), category: '', vendor: '', amount: '', description: '', date: defaultDate, payer: '', location: '', fuelType: '', gallons: '', purchaser: aircraftId, receiptCount: 0 }]);
+  };
+
+  const handleAutoFillParsedExpense = (parsedData) => {
+    const newExp = {
+      id: Date.now(),
+      category: parsedData.category || 'Other',
+      vendor: parsedData.vendor || '',
+      amount: parsedData.amount || '',
+      description: parsedData.invoiceNumber ? `[Inv #${parsedData.invoiceNumber}] ${parsedData.description || ''}` : (parsedData.description || ''),
+      date: parsedData.date || defaultDate,
+      payer: '',
+      location: flightAirports[0] || '',
+      fuelType: parsedData.category === 'Fuel' ? 'Jet-A' : '',
+      gallons: '',
+      purchaser: aircraftId,
+      receiptCount: 0,
+      autoParsed: true
+    };
+    setExpenses([...expenses, newExp]);
   };
 
   const handleUpdate = (id, field, value) => {
@@ -424,7 +444,7 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
         </table>
       </div>
       
-      <div style={{ padding: '15px', borderTop: '1px solid #edf2f7', display: 'flex', justifyContent: 'flex-start', gap: '15px' }}>
+      <div style={{ padding: '15px', borderTop: '1px solid #edf2f7', display: 'flex', justifyContent: 'flex-start', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
         <button 
           type="button" 
           onClick={handleAdd} 
@@ -433,6 +453,8 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
         >
           <Plus size={16} /> Add Expense
         </button>
+
+        <AIInvoiceUploader onExpenseParsed={handleAutoFillParsedExpense} />
         
         <input 
           type="file" 

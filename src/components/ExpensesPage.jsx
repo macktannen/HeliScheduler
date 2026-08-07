@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DollarSign, Search, Calendar, FileText, Building, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { DollarSign, Search, Calendar, FileText, Building, Plus, Trash2, Edit2, Check, X, Sparkles } from 'lucide-react';
 import { mockVendors } from '../data';
 import EventModal from './EventModal';
+import AIInvoiceUploader from './AIInvoiceUploader';
 
 const getCategoryColor = (category) => {
   if (!category) return { bg: '#edf2f7', text: '#4a5568' };
@@ -194,24 +195,66 @@ const ExpensesPage = () => {
     'Tie-down / Parking', 'Wi-Fi / Data', 'Other'
   ];
 
+  const handleGlobalAutoFillParsedExpense = (parsedData) => {
+    try {
+      const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+      if (storedFlights.length === 0) {
+        alert(`Parsed Expense: ${parsedData.vendor} - $${parsedData.amount}\n(No flights found to attach expense to. Please create a flight first).`);
+        return;
+      }
+      
+      const targetFlight = storedFlights[0];
+      const newExp = {
+        id: Date.now(),
+        category: parsedData.category || 'Other',
+        vendor: parsedData.vendor || '',
+        amount: parsedData.amount || 0,
+        description: parsedData.invoiceNumber ? `[Inv #${parsedData.invoiceNumber}] ${parsedData.description || ''}` : (parsedData.description || ''),
+        date: parsedData.date || targetFlight.date?.split('T')[0] || new Date().toISOString().split('T')[0],
+        payer: '',
+        location: '',
+        fuelType: parsedData.category === 'Fuel' ? 'Jet-A' : '',
+        gallons: '',
+        purchaser: targetFlight.aircraftId || '',
+        isPaid: false,
+        autoParsed: true
+      };
+
+      if (!targetFlight.expenses) targetFlight.expenses = [];
+      targetFlight.expenses.unshift(newExp);
+
+      localStorage.setItem('userFlights', JSON.stringify(storedFlights));
+      window.dispatchEvent(new Event('storage'));
+      loadExpensesData();
+
+      alert(`✨ Successfully parsed invoice!\nAdded $${parsedData.amount} (${parsedData.vendor}) to Flight #${targetFlight.flightNumber || targetFlight.id}.`);
+    } catch(err) {
+      console.error("Global auto-fill error:", err);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
       {/* Top Bar Navigation */}
-      <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-        <button 
-          className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setActiveTab('overview')}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          <DollarSign size={16} /> Expenses Overview
-        </button>
-        <button 
-          className={`btn ${activeTab === 'vendors' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setActiveTab('vendors')}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          <Building size={16} /> Vendor Management
-        </button>
+      <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('overview')}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <DollarSign size={16} /> Expenses Overview
+          </button>
+          <button 
+            className={`btn ${activeTab === 'vendors' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('vendors')}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Building size={16} /> Vendor Management
+          </button>
+        </div>
+
+        <AIInvoiceUploader onExpenseParsed={handleGlobalAutoFillParsedExpense} />
       </div>
 
       {activeTab === 'overview' && (

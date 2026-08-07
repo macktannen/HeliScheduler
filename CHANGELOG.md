@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.47] - 2026-08-07
+
+### Added
+- **AI-Powered PDF Invoice & Receipt Reader**:
+  - Integrated `pdfjs-dist` and Google Gemini Vision API (`gemini-2.5-flash`) into `src/services/pdfParserService.js` to automatically extract structured expense details (`vendor`, `amount`, `date`, `category`, `invoiceNumber`, `description`) from uploaded PDF invoices or paper receipt scans.
+  - Added interactive `<AIInvoiceUploader />` dropzone buttons to both the global **Expenses Page** and the **Flight Expenses Tab** inside the Flight Modal.
+  - Included a key setup modal for saving free Gemini API keys locally or configuring via `VITE_GEMINI_API_KEY`.
+
+---
+
 ## [v0.1.46] - 2026-08-07
 
 ### Changed
