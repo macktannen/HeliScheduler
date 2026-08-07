@@ -547,44 +547,55 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     }
   };
 
-  const recalculateLegTimes = (legArray) => {
-    const newLegs = [...legArray];
-    
-    for (let i = 0; i < newLegs.length; i++) {
-      const leg = newLegs[i];
-      if (i > 0) {
-         const prevLeg = newLegs[i-1];
-         const prevArrTz = getLocationTimeZone(prevLeg.destination);
-         const currDepTz = getLocationTimeZone(leg.departure);
-         const prevLandDate = prevLeg.arrDate || prevLeg.date || new Date().toISOString().split('T')[0];
-         const prevLandTime = prevLeg.landTime || "09:00";
-         
-         const prevLandAbs = toDate(`${prevLandDate}T${prevLandTime}:00`, { timeZone: prevArrTz });
-         const newTakeoffAbs = new Date(prevLandAbs.getTime() + 15 * 60000); // 15 mins layover
-         
-         leg.takeoffTime = formatInTimeZone(newTakeoffAbs, currDepTz, 'HH:mm');
-         leg.date = formatInTimeZone(newTakeoffAbs, currDepTz, 'yyyy-MM-dd');
-      }
-      
-      const depTz = getLocationTimeZone(leg.departure);
-      const arrTz = getLocationTimeZone(leg.destination);
-      const takeoffDate = leg.date || new Date().toISOString().split('T')[0];
-      const takeoffTime = leg.takeoffTime || "08:00";
-      const duration = leg.duration || 60;
-      
-      const depAbs = toDate(`${takeoffDate}T${takeoffTime}:00`, { timeZone: depTz });
-      const arrAbs = new Date(depAbs.getTime() + duration * 60000);
+  const calculateSingleLegArrival = (leg) => {
+    const depTz = getLocationTimeZone(leg.departure);
+    const arrTz = getLocationTimeZone(leg.destination);
+    const takeoffDate = leg.date || new Date().toISOString().split('T')[0];
+    const takeoffTime = leg.takeoffTime || "08:00";
+    const durationMins = leg.duration || 60;
 
-      // Guard against invalid dates
-      if (!isNaN(arrAbs.getTime())) {
-        leg.landTime = formatInTimeZone(arrAbs, arrTz, 'HH:mm');
-        leg.arrDate = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
-      } else {
-        leg.landTime = '';
-        leg.arrDate = '';
-      }
+    const depAbs = toDate(`${takeoffDate}T${takeoffTime}:00`, { timeZone: depTz });
+    if (isNaN(depAbs.getTime())) return leg;
+
+    const arrAbs = new Date(depAbs.getTime() + durationMins * 60000);
+    if (!isNaN(arrAbs.getTime())) {
+      return {
+        ...leg,
+        date: takeoffDate,
+        landTime: formatInTimeZone(arrAbs, arrTz, 'HH:mm'),
+        arrDate: formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd')
+      };
     }
-    return newLegs;
+    return leg;
+  };
+
+  const calculateSingleLegDuration = (leg) => {
+    const depTz = getLocationTimeZone(leg.departure);
+    const arrTz = getLocationTimeZone(leg.destination);
+    const takeoffDate = leg.date || new Date().toISOString().split('T')[0];
+    const takeoffTime = leg.takeoffTime || "08:00";
+    let arrDateStr = leg.arrDate || takeoffDate;
+    if (arrDateStr < takeoffDate) arrDateStr = takeoffDate;
+    const landTimeStr = leg.landTime || takeoffTime;
+
+    const depAbs = toDate(`${takeoffDate}T${takeoffTime}:00`, { timeZone: depTz });
+    let arrAbs = toDate(`${arrDateStr}T${landTimeStr}:00`, { timeZone: arrTz });
+
+    if (isNaN(depAbs.getTime()) || isNaN(arrAbs.getTime())) return leg;
+
+    let diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
+    if (diffMins < 0 && arrDateStr === takeoffDate) {
+      arrAbs = new Date(arrAbs.getTime() + 24 * 60 * 60000);
+      diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
+      arrDateStr = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
+    }
+
+    return {
+      ...leg,
+      date: takeoffDate,
+      arrDate: arrDateStr,
+      duration: Math.max(1, Math.round(diffMins))
+    };
   };
 
   const getDistanceNM = (lat1, lon1, lat2, lon2) => {
@@ -633,95 +644,59 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
 
   const handleUpdateLeg = (index, field, value) => {
     let newLegs = [...legs];
-    const leg = newLegs[index];
-    const oldTakeoffDate = legs[index].date;
-    const oldArrDate = legs[index].arrDate || oldTakeoffDate;
+    let leg = { ...newLegs[index] };
+    const oldTakeoffDate = leg.date;
     leg[field] = value;
     
     if (field === 'date') {
        leg.pilotId = getDefaultPilotForDate(value) || leg.pilotId;
-       // Default landing date to match takeoff date if not set or was previously matching takeoff date
        if (!leg.arrDate || leg.arrDate === oldTakeoffDate || leg.arrDate < value) {
          leg.arrDate = value;
        }
-       newLegs = recalculateLegTimes(newLegs);
+       leg = calculateSingleLegArrival(leg);
+
+    } else if (field === 'takeoffTime') {
+       leg = calculateSingleLegArrival(leg);
 
     } else if (field === 'arrDate') {
        const takeoffDate = leg.date || new Date().toISOString().split('T')[0];
        let validArrDate = value;
-       // Prevent backwards dates in time
        if (!validArrDate || validArrDate < takeoffDate) {
           validArrDate = takeoffDate;
        }
        leg.arrDate = validArrDate;
-
-       if (leg.takeoffTime && leg.landTime) {
-          const depTz = getLocationTimeZone(leg.departure);
-          const arrTz = getLocationTimeZone(leg.destination);
-          const depAbs = toDate(`${takeoffDate}T${leg.takeoffTime}:00`, { timeZone: depTz });
-          const arrAbs = toDate(`${validArrDate}T${leg.landTime}:00`, { timeZone: arrTz });
-          
-          let diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
-          if (diffMins <= 0) {
-             diffMins = 60;
-          }
-          leg.duration = Math.round(diffMins);
-       }
-       if (index < newLegs.length - 1) {
-          newLegs = recalculateLegTimes(newLegs);
-       }
+       leg = calculateSingleLegDuration(leg);
 
     } else if (field === 'landTime') {
-       leg.landTime = value;
-       const takeoffDate = leg.date || new Date().toISOString().split('T')[0];
-       let arrDateStr = leg.arrDate || takeoffDate;
-       if (arrDateStr < takeoffDate) arrDateStr = takeoffDate;
+       leg = calculateSingleLegDuration(leg);
 
-       if (leg.takeoffTime) {
-          const depTz = getLocationTimeZone(leg.departure);
-          const arrTz = getLocationTimeZone(leg.destination);
-          const depAbs = toDate(`${takeoffDate}T${leg.takeoffTime}:00`, { timeZone: depTz });
-          let arrAbs = toDate(`${arrDateStr}T${value}:00`, { timeZone: arrTz });
-          
-          let diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
-          if (diffMins < 0 && arrDateStr === takeoffDate) {
-             arrAbs = new Date(arrAbs.getTime() + 24 * 60 * 60000);
-             diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
-             arrDateStr = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
-             leg.arrDate = arrDateStr;
-          }
-          leg.duration = Math.max(1, Math.round(diffMins));
-       }
-       if (index < newLegs.length - 1) {
-          newLegs = recalculateLegTimes(newLegs);
-       }
+    } else if (field === 'duration') {
+       const hours = parseFloat(value) || 0;
+       leg.duration = Math.round(hours * 60);
+       leg = calculateSingleLegArrival(leg);
 
     } else if (field === 'departure' || field === 'destination') {
        const est = calculateEstimatedMinutes(leg.departure, leg.destination, aircraftId);
        if (est) {
          leg.duration = est.mins;
          leg.distance = est.nm;
-         const depTz = getLocationTimeZone(leg.departure);
-         const arrTz = getLocationTimeZone(leg.destination);
-         const depAbs = toDate(`${leg.date || new Date().toISOString().split('T')[0]}T${leg.takeoffTime}:00`, { timeZone: depTz });
-         const arrAbs = new Date(depAbs.getTime() + est.mins * 60000);
-         if (!isNaN(arrAbs.getTime())) {
-           leg.landTime = formatInTimeZone(arrAbs, arrTz, 'HH:mm');
-           leg.arrDate = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
-         }
-         newLegs = recalculateLegTimes(newLegs);
+       }
+       leg = calculateSingleLegArrival(leg);
+
+       if (field === 'destination' && index < newLegs.length - 1) {
+         newLegs[index + 1] = {
+           ...newLegs[index + 1],
+           departure: value
+         };
        }
 
-    } else if (field === 'duration') {
-       const hours = parseFloat(value) || 0;
-       const mins = Math.round(hours * 60);
-       leg.duration = mins;
-       newLegs = recalculateLegTimes(newLegs);
-
-    } else if (field === 'takeoffTime') {
-       newLegs = recalculateLegTimes(newLegs);
+    } else if (field === 'pilotId') {
+       leg.pilotId = value;
+    } else if (field === 'passengers') {
+       leg.passengers = value;
     }
     
+    newLegs[index] = leg;
     setLegs(newLegs);
   };
 
@@ -731,7 +706,6 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     _legs.splice(dragOverItem.current, 0, draggedItemContent);
     dragItem.current = null;
     dragOverItem.current = null;
-    _legs = recalculateLegTimes(_legs);
     setLegs(_legs);
   };
 
@@ -739,7 +713,6 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     const lastLeg = legs[legs.length - 1];
     let newTakeoff = '10:00';
     let newDate = lastLeg.date;
-    // Ensure we have a valid landTime before calculating next departure
     if (lastLeg.landTime) {
       const arrTz = getLocationTimeZone(lastLeg.destination);
       const arrAbs = toDate(`${lastLeg.arrDate || lastLeg.date}T${lastLeg.landTime}:00`, { timeZone: arrTz });
@@ -751,7 +724,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     }
     const defaultPilot = getDefaultPilotForDate(newDate) || lastLeg.pilotId || '';
     const defaultPax = getDefaultPassengersForDate(newDate);
-    const tempLegs = [...legs, { 
+    const newLeg = calculateSingleLegArrival({ 
       departure: lastLeg.destination || null, 
       destination: null, 
       takeoffTime: newTakeoff, 
@@ -760,9 +733,10 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       distance: null, 
       passengers: defaultPax.length > 0 ? defaultPax : (lastLeg.passengers || []), 
       pilotId: defaultPilot,
-      date: newDate
-    }];
-    setLegs(recalculateLegTimes(tempLegs));
+      date: newDate,
+      arrDate: newDate
+    });
+    setLegs([...legs, newLeg]);
   };
 
   const handleRemoveLeg = (index) => {

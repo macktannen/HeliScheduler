@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.37] - 2026-08-07
+
+### Fixed
+- **Independent Leg Editing for Leg 2+**:
+  - Replaced global loop recalculations with single-leg handlers (`calculateSingleLegArrival` and `calculateSingleLegDuration`) in `EventModal.jsx`.
+  - Leg 2, Leg 3, and subsequent legs now allow editing takeoff date, takeoff time, departure location, destination location, duration, landing date, landing time, pilot, and passengers independently, matching Leg 1 behavior.
+
+---
+
 ## [v0.1.36] - 2026-08-07
 
 ### Changed
