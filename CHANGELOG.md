@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.41] - 2026-08-07
+
+### Fixed
+- **Pilot Tag Role Transitions & Dedicated Remove Button**:
+  - Automatically assign newly added pilots as `SIC` when a `PIC` already exists on the leg.
+  - Clicking an existing `[PIC]` moves them to `[SIC]` and bumps the previous `[SIC]` to `Crew` (unassigned).
+  - Separated the pilot tag name click target from a dedicated `X` remove button with explicit event stopping, ensuring clean pilot removal from legs.
+
+---
+
 ## [v0.1.40] - 2026-08-07
 
 ### Added

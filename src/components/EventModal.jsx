@@ -733,26 +733,33 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     const currentRoles = { ...(leg.pilotRoles || {}) };
     const currentRole = currentRoles[pId];
 
-    let newRole = null;
-    if (!currentRole) {
-      newRole = 'PIC';
-    } else if (currentRole === 'PIC') {
-      newRole = 'SIC';
-    } else if (currentRole === 'SIC') {
-      newRole = null;
-    }
-
-    if (newRole === 'PIC') {
+    if (currentRole === 'PIC') {
+      // Move current PIC to SIC, and bump any existing SIC to nothing (Crew)
       Object.keys(currentRoles).forEach(id => {
-        if (currentRoles[id] === 'PIC') {
-          currentRoles[id] = 'SIC';
+        if (currentRoles[id] === 'SIC') {
+          delete currentRoles[id];
         }
       });
-      currentRoles[pId] = 'PIC';
-    } else if (newRole === 'SIC') {
       currentRoles[pId] = 'SIC';
-    } else {
+
+    } else if (currentRole === 'SIC') {
+      // Move SIC to nothing (Crew)
       delete currentRoles[pId];
+
+    } else {
+      // Move Crew to PIC. Move previous PIC to SIC, and bump previous SIC to nothing
+      const previousPicId = Object.keys(currentRoles).find(id => currentRoles[id] === 'PIC');
+      
+      Object.keys(currentRoles).forEach(id => {
+        if (currentRoles[id] === 'SIC') {
+          delete currentRoles[id];
+        }
+      });
+
+      if (previousPicId) {
+        currentRoles[previousPicId] = 'SIC';
+      }
+      currentRoles[pId] = 'PIC';
     }
 
     leg.pilotRoles = currentRoles;
@@ -1192,37 +1199,57 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                                 return (
                                   <div 
                                     key={pId} 
-                                    onClick={() => handleTogglePilotRole(index, pId)}
-                                    title="Click to toggle PIC / SIC / Crew role"
                                     style={{ 
-                                      display: 'flex', 
+                                      display: 'inline-flex', 
                                       alignItems: 'center', 
                                       backgroundColor: badgeBg, 
                                       border: badgeBorder,
                                       color: badgeTextColor, 
-                                      fontWeight: 'bold', 
-                                      padding: '3px 8px', 
                                       borderRadius: '4px', 
                                       fontSize: '0.7rem',
-                                      cursor: 'pointer',
+                                      overflow: 'hidden',
                                       userSelect: 'none',
-                                      transition: 'all 0.15s ease'
+                                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                     }}
                                   >
-                                    <span>{pilot ? pilot.name : pId}{roleText}</span>
-                                    <X 
-                                      size={10} 
-                                      style={{ marginLeft: '6px', cursor: 'pointer', opacity: 0.7 }} 
+                                    <span 
+                                      onClick={() => handleTogglePilotRole(index, pId)}
+                                      title="Click to toggle role (PIC -> SIC -> Crew)"
+                                      style={{ 
+                                        padding: '3px 6px', 
+                                        cursor: 'pointer', 
+                                        fontWeight: 'bold',
+                                        display: 'inline-flex',
+                                        alignItems: 'center'
+                                      }}
+                                    >
+                                      {pilot ? pilot.name : pId}{roleText}
+                                    </span>
+                                    <span
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         const currentPilots = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
                                         const updatedPilots = currentPilots.filter(p => p !== pId);
                                         const updatedRoles = { ...(leg.pilotRoles || {}) };
                                         delete updatedRoles[pId];
                                         handleUpdateLeg(index, 'pilots', updatedPilots);
                                         handleUpdateLeg(index, 'pilotRoles', updatedRoles);
-                                      }} 
-                                    />
+                                      }}
+                                      title="Remove pilot from leg"
+                                      style={{
+                                        padding: '3px 6px',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderLeft: '1px solid rgba(0,0,0,0.12)',
+                                        backgroundColor: 'rgba(0,0,0,0.04)',
+                                        color: badgeTextColor
+                                      }}
+                                    >
+                                      <X size={11} strokeWidth={2.5} />
+                                    </span>
                                   </div>
                                 );
                               })}
