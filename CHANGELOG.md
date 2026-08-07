@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.53] - 2026-08-07
+
+### Fixed
+- **Migrated to Current Free-Tier Gemini Models**:
+  - Replaced deprecated `gemini-1.5-flash` and quota-exhausted `gemini-2.0-flash` endpoints with active free-tier models: **`gemini-3.5-flash-lite`** (primary) and **`gemini-3.6-flash`** (fallback).
+  - The older 1.5/2.0 models have been removed from Google's free tier as of 2026, causing all previous attempts to fail with 404 or 429 (limit: 0) errors.
+
+---
+
 ## [v0.1.52] - 2026-08-07
 
 ### Fixed
