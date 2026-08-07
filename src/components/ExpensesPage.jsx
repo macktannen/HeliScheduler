@@ -263,8 +263,8 @@ const ExpensesPage = () => {
               category: validCategory || 'Other',
               address: parsedData.vendorAddress || '',
               phone: parsedData.vendorPhone || '',
-              email: '',
-              poc: ''
+              email: parsedData.vendorEmail || '',
+              poc: parsedData.vendorPoc || ''
             };
 
             const updatedVendorsList = [...currentVendors, newVendorObj];

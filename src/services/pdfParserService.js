@@ -95,8 +95,10 @@ Extract the expense details into a valid JSON object matching this schema:
 {
   "vendor": "String - Match with an existing vendor from the CURRENT VENDOR LIST above if possible (return vendor name or vendor ID). If NO existing vendor matches, provide the full business/company/FBO name, title, or airport FBO name from the receipt so a new vendor can be created.",
   "matchedVendorId": "String or null - If you matched an existing vendor from the list above, return its ID (e.g. SIG, AVF, V-100). Otherwise null.",
-  "vendorAddress": "String - Street address or location of vendor if visible on receipt, or empty string",
-  "vendorPhone": "String - Phone number of vendor if visible on receipt, or empty string",
+  "vendorAddress": "String - Full street address, city, state, zip code, or airport facility location of vendor if visible anywhere on receipt. Be thorough.",
+  "vendorPhone": "String - Main telephone or customer service phone number of vendor if visible on receipt.",
+  "vendorEmail": "String - Email address or website domain of vendor if visible anywhere on receipt.",
+  "vendorPoc": "String - Representative, agent, cashier, customer service contact, manager name, or point of contact listed on receipt.",
   "amount": null or Number - The TOTAL invoice/receipt amount as a number (e.g. 1420.50). Use null if you cannot determine the total.
   "date": "String or null - Transaction date in YYYY-MM-DD format. Use null if not clearly visible.",
   "category": "String - MUST be one of these exact values: Catering, Cleaning / Detailing, Crew Meal, Customs / Border Fees, De-icing, Fuel, GPU / Start Cart, Ground Transportation, Handling, Hangar / Storage, Hotel, Landing Fee, Lavatory Service, Maintenance / Repairs, Navigation / Overflight, Oil / Fluids, Oxygen Service, Ramp Fee, Tie-down / Parking, Wi-Fi / Data, Other. If none match well, you may suggest a new category name.",
@@ -108,9 +110,13 @@ Extract the expense details into a valid JSON object matching this schema:
 }
 
 IMPORTANT RULES FOR VENDOR IDENTIFICATION:
-- Use all available context: look for header titles, company logos/names, airport facility/FBO names, addresses, or phone numbers on the document.
+- Use all available context: look for header titles, company logos/names, airport facility/FBO names, addresses, phone numbers, emails, websites, cashier/POC names anywhere on the document.
 - First check if it matches any vendor in CURRENT VENDOR LIST above. If it does, set "vendor" to that vendor's Name and "matchedVendorId" to its ID.
-- If it does NOT match any vendor in the list, set "vendor" to the extracted business name/title/FBO name, and provide "vendorAddress" and "vendorPhone" if visible so a new vendor entry can be created.
+- If it does NOT match any vendor in the list, extract ALL vendor details to the maximum extent:
+  * "vendorAddress": Include full street, city, state, zip or airport LZ location visible.
+  * "vendorPhone": Extract phone number if shown.
+  * "vendorEmail": Extract email address or domain if shown.
+  * "vendorPoc": Extract cashier, agent, manager, or point of contact name if shown.
 
 Return ONLY raw JSON, with no markdown formatting.
 `;
@@ -182,6 +188,8 @@ Return ONLY raw JSON, with no markdown formatting.
     matchedVendorId: parsed.matchedVendorId || '',
     vendorAddress: parsed.vendorAddress || '',
     vendorPhone: parsed.vendorPhone || '',
+    vendorEmail: parsed.vendorEmail || '',
+    vendorPoc: parsed.vendorPoc || '',
     amount: parsed.amount != null ? (typeof parsed.amount === 'number' ? parsed.amount : parseFloat(parsed.amount)) : '',
     date: parsed.date || '',
     category: parsed.category || '',

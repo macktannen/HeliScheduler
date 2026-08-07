@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.56] - 2026-08-07
+
+### Improved
+- **Maximized Vendor Information Extraction**:
+  - Enhanced Gemini AI prompt rules to actively search for and extract street address, city/state/zip, phone number, email/domain, and cashier/manager/point of contact (POC) name from documents.
+  - Automatically populates `address`, `phone`, `email`, and `poc` fields on new vendor entries when created in Vendor Management.
+
+---
+
 ## [v0.1.55] - 2026-08-07
 
 ### Improved
