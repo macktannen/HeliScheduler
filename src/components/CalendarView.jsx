@@ -400,19 +400,16 @@ const CalendarView = () => {
                             right: '4px',
                             backgroundColor: '#1a202c',
                             color: '#f6e05e',
-                            padding: '2px 5px',
-                            borderRadius: '10px',
-                            fontSize: '0.62rem',
-                            fontWeight: 'bold',
+                            padding: '3px',
+                            borderRadius: '50%',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '3px',
+                            justifyContent: 'center',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                             zIndex: 5
                           }}
                         >
-                          <Moon size={10} color="#f6e05e" fill="#f6e05e" />
-                          <span>Overnight</span>
+                          <Moon size={11} color="#f6e05e" fill="#f6e05e" />
                         </div>
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>

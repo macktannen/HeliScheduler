@@ -423,18 +423,16 @@ const CrewSchedule = () => {
                                    right: '3px',
                                    backgroundColor: '#1a202c',
                                    color: '#f6e05e',
-                                   padding: '1px 4px',
-                                   borderRadius: '8px',
-                                   fontSize: '0.55rem',
-                                   fontWeight: 'bold',
+                                   padding: '2px',
+                                   borderRadius: '50%',
                                    display: 'flex',
                                    alignItems: 'center',
-                                   gap: '2px',
+                                   justifyContent: 'center',
+                                   boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                                    zIndex: 5
                                  }}
                                >
-                                 <Moon size={8} color="#f6e05e" fill="#f6e05e" />
-                                 <span>ON</span>
+                                 <Moon size={9} color="#f6e05e" fill="#f6e05e" />
                                </div>
                              )}
                              <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>

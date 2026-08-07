@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.36] - 2026-08-07
+
+### Changed
+- **Compact Top-Right Moon Icon Badge**:
+  - Removed the text label from the top-right overnight badge on `CalendarView.jsx` and `CrewSchedule.jsx`, leaving solely the moon icon (`🌙`) in a clean circular badge.
+  - Prevents overlap or clipping with long flight titles.
+
+---
+
 ## [v0.1.35] - 2026-08-07
 
 ### Added
