@@ -1007,8 +1007,15 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
 
                     {/* Departure */}
                     <div style={{ flex: '1', padding: '4px 8px', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <input type="date" value={leg.date} onChange={e => handleUpdateLeg(index, 'date', e.target.value)} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', padding: 0 }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input type="date" value={leg.date} onChange={e => handleUpdateLeg(index, 'date', e.target.value)} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', padding: 0 }} />
+                          {index > 0 && legs[0].date && leg.date && leg.date !== legs[0].date && (
+                            <span style={{ fontSize: '0.65rem', backgroundColor: '#e9d8fd', color: '#6b46c1', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                              Multi-day leg
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                            <input type="time" value={leg.takeoffTime} onChange={e => handleUpdateLeg(index, 'takeoffTime', e.target.value)} style={{ fontSize: '1rem', fontWeight: 'bold', color: '#48bb78', border: 'none', outline: 'none', cursor: 'pointer' }} />
                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>[{depTzLabel}]</span>

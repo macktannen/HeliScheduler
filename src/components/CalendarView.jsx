@@ -364,7 +364,14 @@ const CalendarView = () => {
                   const pilotName = pilot ? pilot.name : 'Unknown';
                   const account = accountsList.find(a => a.id === flight.accountId);
                   const accountName = account ? account.name : 'No Account';
-                  const isOvernight = (flight.legs || []).some(l => l.arrDate && l.date && l.arrDate > l.date);
+                  
+                  const firstLegDate = flight.legs && flight.legs[0] ? (flight.legs[0].date || (flight.date ? flight.date.split('T')[0] : null)) : null;
+                  const isOvernight = (flight.legs || []).some(l => {
+                    const depDate = l.date || (flight.date ? flight.date.split('T')[0] : null);
+                    const arrDate = l.arrDate || depDate;
+                    if (!depDate) return false;
+                    return (arrDate > depDate) || (firstLegDate && depDate !== firstLegDate) || (firstLegDate && arrDate !== firstLegDate);
+                  });
 
                   return (
                     <div 

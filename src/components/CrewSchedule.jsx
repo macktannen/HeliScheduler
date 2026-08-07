@@ -399,7 +399,13 @@ const CrewSchedule = () => {
                       {/* Flight Cards */}
                       {dayFlights.map(f => {
                          const color = f.tag === 'Emergency' ? '#ed8936' : f.tag === 'Maintenance' ? '#e53e3e' : '#8b5cf6';
-                         const isOvernight = (f.legs || []).some(l => l.arrDate && l.date && l.arrDate > l.date);
+                         const firstLegDate = f.legs && f.legs[0] ? (f.legs[0].date || (f.date ? f.date.split('T')[0] : null)) : null;
+                         const isOvernight = (f.legs || []).some(l => {
+                           const depDate = l.date || (f.date ? f.date.split('T')[0] : null);
+                           const arrDate = l.arrDate || depDate;
+                           if (!depDate) return false;
+                           return (arrDate > depDate) || (firstLegDate && depDate !== firstLegDate) || (firstLegDate && arrDate !== firstLegDate);
+                         });
                          return (
                            <div 
                              key={f.id} 

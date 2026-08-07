@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.38] - 2026-08-07
+
+### Added
+- **Multi-Day Leg 2+ Overnight Symbol Support**:
+  - Expanded `isOvernight` flight card logic on `CalendarView.jsx` and `CrewSchedule.jsx` to show the top-right moon symbol badge whenever any leg (including Leg 2 or Leg 3+) takes off or lands on a different date than Leg 1.
+  - Added a `Multi-day leg` purple badge on the takeoff date picker in `EventModal.jsx` when Leg 2+ is set to a different date than Leg 1.
+
+---
+
 ## [v0.1.37] - 2026-08-07
 
 ### Fixed
