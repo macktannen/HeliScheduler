@@ -231,26 +231,61 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
       validGallons = parsedData.gallons != null && parsedData.gallons !== '' ? parsedData.gallons : '';
     }
 
-    // Create vendor if new
+    // Intelligent Vendor Matching & Creation
+    let finalVendorName = parsedData.vendor || '';
     if (parsedData.vendor && parsedData.vendor.trim()) {
       try {
         const storedVendors = JSON.parse(localStorage.getItem('userVendors') || '[]');
-        const vendorExists = storedVendors.some(v => 
-          (v.name || '').toLowerCase() === parsedData.vendor.trim().toLowerCase() ||
-          (v.vendorId || '').toLowerCase() === parsedData.vendor.trim().toLowerCase()
-        );
-        if (!vendorExists) {
-          const newVendor = {
-            vendorId: parsedData.vendor.trim().replace(/\s+/g, '_').substring(0, 10).toUpperCase(),
-            name: parsedData.vendor.trim(),
-            category: validCategory || '',
-            address: '', phone: '', email: '', poc: ''
-          };
-          storedVendors.push(newVendor);
-          localStorage.setItem('userVendors', JSON.stringify(storedVendors));
-          window.dispatchEvent(new Event('storage'));
+        let currentVendors = storedVendors;
+        if (currentVendors.length === 0) {
+          const { mockVendors } = await import('../data');
+          currentVendors = mockVendors;
         }
-      } catch(e) { console.warn('Vendor creation error:', e); }
+
+        const rawVendorInput = parsedData.vendor.trim().toLowerCase();
+        const matchedVendorId = (parsedData.matchedVendorId || '').toLowerCase();
+
+        // 1. Try to find exact or fuzzy match among existing vendors (by ID, vendorId, name, or address)
+        const matchedVendor = currentVendors.find(v => {
+          const vId = (v.id || '').toLowerCase();
+          const vVendorId = (v.vendorId || '').toLowerCase();
+          const vName = (v.name || '').toLowerCase();
+          const vAddr = (v.address || '').toLowerCase();
+
+          return (
+            (matchedVendorId && (vId === matchedVendorId || vVendorId === matchedVendorId)) ||
+            vName === rawVendorInput ||
+            (vVendorId && vVendorId === rawVendorInput) ||
+            vName.includes(rawVendorInput) ||
+            rawVendorInput.includes(vName) ||
+            (vAddr && rawVendorInput.includes(vAddr))
+          );
+        });
+
+        if (matchedVendor) {
+          finalVendorName = matchedVendor.vendorId || matchedVendor.name;
+        } else {
+          // 2. Create a new vendor if no existing match was found
+          const cleanName = parsedData.vendor.trim();
+          const newVendorId = cleanName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 10).toUpperCase();
+          
+          const newVendorObj = {
+            id: `V-${Date.now()}`,
+            vendorId: newVendorId,
+            name: cleanName,
+            category: validCategory || 'Other',
+            address: parsedData.vendorAddress || '',
+            phone: parsedData.vendorPhone || '',
+            email: '',
+            poc: ''
+          };
+
+          const updatedVendorsList = [...currentVendors, newVendorObj];
+          localStorage.setItem('userVendors', JSON.stringify(updatedVendorsList));
+          window.dispatchEvent(new Event('storage'));
+          finalVendorName = newVendorObj.vendorId || cleanName;
+        }
+      } catch(e) { console.warn('Vendor matching/creation error:', e); }
     }
 
     // Auto-upload document as receipt attachment
@@ -267,7 +302,7 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
     const newExp = {
       id: Date.now(),
       category: validCategory,
-      vendor: parsedData.vendor || '',
+      vendor: finalVendorName,
       amount: parsedData.amount !== '' && parsedData.amount != null ? parsedData.amount : '',
       description: parsedData.invoiceNumber ? `[Inv #${parsedData.invoiceNumber}] ${parsedData.description || ''}` : (parsedData.description || ''),
       date: parsedData.date || defaultDate,

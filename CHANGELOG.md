@@ -2,6 +2,17 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.55] - 2026-08-07
+
+### Improved
+- **Context-Aware AI Vendor Matching & Auto-Creation**:
+  - The existing vendor list (including vendor names, IDs, categories, and addresses) is now fed directly into the Gemini prompt context.
+  - The AI uses full document context (header titles, company names, airport/FBO facility names, address, phone number) to match against existing vendors.
+  - If a match is found, it automatically links the existing vendor by Name / Vendor ID.
+  - If no match is found, a new vendor entry is created in `localStorage` containing the extracted business name, category, address, and phone number, and dispatched across all views.
+
+---
+
 ## [v0.1.54] - 2026-08-07
 
 ### Improved

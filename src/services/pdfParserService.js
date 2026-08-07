@@ -70,12 +70,33 @@ export async function parseInvoiceFile(file, customApiKey = null) {
 
   const { base64, mimeType } = await fileToBase64Image(file);
 
+  // Retrieve existing vendors from localStorage or mockVendors to pass to AI prompt for matching
+  let existingVendors = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem('userVendors') || '[]');
+    if (stored && stored.length > 0) existingVendors = stored;
+    else {
+      const { mockVendors } = await import('../data');
+      existingVendors = mockVendors;
+    }
+  } catch (e) {}
+
+  const vendorListContext = existingVendors.map(v => 
+    `- [ID: ${v.vendorId || v.id}] Name: "${v.name}" | Category: "${v.category || ''}" | Address: "${v.address || ''}"`
+  ).join('\n');
+
   const promptText = `
 Analyze this invoice or receipt image carefully. Be CONSERVATIVE - only fill in fields you are confident about. Leave fields as empty string or null if unsure.
 
+CURRENT VENDOR LIST IN APP:
+${vendorListContext}
+
 Extract the expense details into a valid JSON object matching this schema:
 {
-  "vendor": "String - The vendor, company, or FBO name exactly as shown on the document. Always fill this in if visible.",
+  "vendor": "String - Match with an existing vendor from the CURRENT VENDOR LIST above if possible (return vendor name or vendor ID). If NO existing vendor matches, provide the full business/company/FBO name, title, or airport FBO name from the receipt so a new vendor can be created.",
+  "matchedVendorId": "String or null - If you matched an existing vendor from the list above, return its ID (e.g. SIG, AVF, V-100). Otherwise null.",
+  "vendorAddress": "String - Street address or location of vendor if visible on receipt, or empty string",
+  "vendorPhone": "String - Phone number of vendor if visible on receipt, or empty string",
   "amount": null or Number - The TOTAL invoice/receipt amount as a number (e.g. 1420.50). Use null if you cannot determine the total.
   "date": "String or null - Transaction date in YYYY-MM-DD format. Use null if not clearly visible.",
   "category": "String - MUST be one of these exact values: Catering, Cleaning / Detailing, Crew Meal, Customs / Border Fees, De-icing, Fuel, GPU / Start Cart, Ground Transportation, Handling, Hangar / Storage, Hotel, Landing Fee, Lavatory Service, Maintenance / Repairs, Navigation / Overflight, Oil / Fluids, Oxygen Service, Ramp Fee, Tie-down / Parking, Wi-Fi / Data, Other. If none match well, you may suggest a new category name.",
@@ -86,14 +107,10 @@ Extract the expense details into a valid JSON object matching this schema:
   "description": "String - Brief summary of line items (e.g. 250 gal Jet-A @ $5.68/gal + Ramp Fee)"
 }
 
-IMPORTANT RULES:
-- For vendor: Always extract the company/business name.
-- For category: Use the EXACT category names from the list above. Only create a new category if nothing in the list fits.
-- For payment: ONLY use values from the list. If you cannot determine payment method, use null.
-- For fuelType: ONLY fill this if the invoice is clearly for fuel. If fuel supplier matches one in the list, use it. Otherwise default to "FBO".
-- For gallons: ONLY fill this if the invoice is for fuel and shows a quantity. Otherwise null.
-- For amount: Must be the total/grand total. If unclear, use null.
-- Leave any field null/empty if you are not confident.
+IMPORTANT RULES FOR VENDOR IDENTIFICATION:
+- Use all available context: look for header titles, company logos/names, airport facility/FBO names, addresses, or phone numbers on the document.
+- First check if it matches any vendor in CURRENT VENDOR LIST above. If it does, set "vendor" to that vendor's Name and "matchedVendorId" to its ID.
+- If it does NOT match any vendor in the list, set "vendor" to the extracted business name/title/FBO name, and provide "vendorAddress" and "vendorPhone" if visible so a new vendor entry can be created.
 
 Return ONLY raw JSON, with no markdown formatting.
 `;
@@ -162,6 +179,9 @@ Return ONLY raw JSON, with no markdown formatting.
 
   return {
     vendor: parsed.vendor || '',
+    matchedVendorId: parsed.matchedVendorId || '',
+    vendorAddress: parsed.vendorAddress || '',
+    vendorPhone: parsed.vendorPhone || '',
     amount: parsed.amount != null ? (typeof parsed.amount === 'number' ? parsed.amount : parseFloat(parsed.amount)) : '',
     date: parsed.date || '',
     category: parsed.category || '',
