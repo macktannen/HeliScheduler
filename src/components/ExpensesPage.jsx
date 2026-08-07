@@ -87,6 +87,19 @@ const ExpensesPage = () => {
     } catch(e) { setVendors(mockVendors); }
   }, []);
 
+  // Listen for storage events to refresh expenses when line-level saves occur
+  useEffect(() => {
+    const handleStorageSync = () => {
+      loadExpensesData();
+      try {
+        const storedVendors = JSON.parse(localStorage.getItem('userVendors'));
+        if (storedVendors && storedVendors.length > 0) setVendors(storedVendors);
+      } catch (_e) { /* ignore */ }
+    };
+    window.addEventListener('storage', handleStorageSync);
+    return () => window.removeEventListener('storage', handleStorageSync);
+  }, []);
+
   const handleOpenFlightCard = (exp) => {
     try {
       const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');

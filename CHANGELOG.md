@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.63] - 2026-08-07
+
+### Fixed
+- **Row-Level Save Now Persists Across the Entire App**:
+  - Root cause: clicking the line Save icon wrote to `localStorage` but CalendarView and ExpensesPage never listened for storage changes, so their in-memory `flights` state stayed stale. Closing and reopening a flight card would reload old data.
+  - Added `storage` event listeners to both CalendarView and ExpensesPage so they refresh their flight/expense state whenever `localStorage` is updated.
+  - Now clicking the line-level Save icon immediately persists the row's changes to `localStorage`, CalendarView picks up the update, and re-opening the flight card shows the saved data — exactly like clicking "Save Flight" but scoped to just that one expense row.
+
+---
+
 ## [v0.1.62] - 2026-08-07
 
 ### Fixed

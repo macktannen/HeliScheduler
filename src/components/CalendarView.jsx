@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, startOfMonth, endOfMonth, isSameMonth, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus, GripVertical, Moon } from 'lucide-react';
 import { mockFlights, mockPilots, mockAircrafts, mockAccounts, mockCustomZones } from '../data';
@@ -67,6 +67,20 @@ const CalendarView = () => {
       if (storedAccounts && storedAccounts.length > 0) setAccountsList(storedAccounts);
       else setAccountsList(mockAccounts);
     } catch(e) { setAccountsList(mockAccounts); }
+  }, []);
+
+  // Listen for storage events (fired by line-level expense saves, etc.) and refresh flights
+  useEffect(() => {
+    const handleStorageSync = () => {
+      try {
+        const stored = localStorage.getItem('userFlights');
+        if (stored) {
+          setFlights(JSON.parse(stored));
+        }
+      } catch (_e) { /* ignore parse errors */ }
+    };
+    window.addEventListener('storage', handleStorageSync);
+    return () => window.removeEventListener('storage', handleStorageSync);
   }, []);
 
   const monthStart = startOfMonth(currentDate);

@@ -68,20 +68,27 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
 
   // Helper to persist expenses to localStorage userFlights for current flight if open
   const persistExpensesToFlight = (updatedExpenses) => {
-    if (flight && flight.id) {
-      try {
-        const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
-        const updatedFlights = storedFlights.map(f => {
-          if (String(f.id) === String(flight.id)) {
-            return { ...f, expenses: updatedExpenses };
-          }
-          return f;
-        });
-        localStorage.setItem('userFlights', JSON.stringify(updatedFlights));
-        window.dispatchEvent(new Event('storage'));
-      } catch (e) {
-        console.error("Failed to persist expenses to localStorage", e);
-      }
+    if (!flight) return; // no flight context, nothing to persist
+    try {
+      const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
+      if (storedFlights.length === 0) return;
+
+      const targetId = flight.id;
+      const targetFlightNumber = flight.flightNumber;
+
+      const updatedFlights = storedFlights.map(f => {
+        const isMatch = (targetId && String(f.id) === String(targetId)) ||
+                        (targetFlightNumber && String(f.flightNumber) === String(targetFlightNumber));
+        if (isMatch) {
+          return { ...f, expenses: updatedExpenses };
+        }
+        return f;
+      });
+
+      localStorage.setItem('userFlights', JSON.stringify(updatedFlights));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.error("Failed to persist expenses to localStorage", e);
     }
   };
 
