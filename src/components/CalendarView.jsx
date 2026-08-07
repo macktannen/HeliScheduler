@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, startOfMonth, endOfMonth, isSameMonth, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, GripVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, GripVertical, Moon } from 'lucide-react';
 import { mockFlights, mockPilots, mockAircrafts, mockAccounts, mockCustomZones } from '../data';
 import airportsData from '../data/airports.json';
 import EventModal from './EventModal';
@@ -364,6 +364,8 @@ const CalendarView = () => {
                   const pilotName = pilot ? pilot.name : 'Unknown';
                   const account = accountsList.find(a => a.id === flight.accountId);
                   const accountName = account ? account.name : 'No Account';
+                  const isOvernight = (flight.legs || []).some(l => l.arrDate && l.date && l.arrDate > l.date);
+
                   return (
                     <div 
                       key={flight.id} 
@@ -388,6 +390,31 @@ const CalendarView = () => {
                         userSelect: 'text'
                       }}
                     >
+                      {/* Top Right Overnight Symbol */}
+                      {isOvernight && (
+                        <div 
+                          title="Overnight Flight (Spans multiple days)"
+                          style={{
+                            position: 'absolute',
+                            top: '4px',
+                            right: '4px',
+                            backgroundColor: '#1a202c',
+                            color: '#f6e05e',
+                            padding: '2px 5px',
+                            borderRadius: '10px',
+                            fontSize: '0.62rem',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                            zIndex: 5
+                          }}
+                        >
+                          <Moon size={10} color="#f6e05e" fill="#f6e05e" />
+                          <span>Overnight</span>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
                         <div 
                           style={{ cursor: 'grab', marginTop: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}

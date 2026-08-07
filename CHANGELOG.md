@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.35] - 2026-08-07
+
+### Added
+- **Top-Right Overnight Badge on Calendar & Schedule Flight Cards**:
+  - Added a dedicated top-right **Overnight Symbol Badge** (`🌙 Overnight`) to flight cards on both the originating date and spanned next-day date in `CalendarView.jsx` and `CrewSchedule.jsx`.
+  - Positioned in the top right corner with a dark slate background, warm yellow moon icon, and high-visibility styling.
+
+---
+
 ## [v0.1.34] - 2026-08-07
 
 ### Added

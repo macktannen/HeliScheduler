@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Filter, Settings, Plane, X, Plus, GripVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Settings, Plane, X, Plus, GripVertical, Moon } from 'lucide-react';
 import { startOfWeek, addDays, format, subWeeks, addWeeks, isSameDay } from 'date-fns';
 import airportsData from '../data/airports.json';
 import { mockCustomZones } from '../data';
@@ -399,6 +399,7 @@ const CrewSchedule = () => {
                       {/* Flight Cards */}
                       {dayFlights.map(f => {
                          const color = f.tag === 'Emergency' ? '#ed8936' : f.tag === 'Maintenance' ? '#e53e3e' : '#8b5cf6';
+                         const isOvernight = (f.legs || []).some(l => l.arrDate && l.date && l.arrDate > l.date);
                          return (
                            <div 
                              key={f.id} 
@@ -409,10 +410,33 @@ const CrewSchedule = () => {
                              }}
                              style={{ 
                                backgroundColor: color, color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.7rem', marginBottom: '4px',
-                               cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                               cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', position: 'relative'
                              }}
                              title="Click to open flight card"
                            >
+                             {isOvernight && (
+                               <div 
+                                 title="Overnight Flight"
+                                 style={{
+                                   position: 'absolute',
+                                   top: '3px',
+                                   right: '3px',
+                                   backgroundColor: '#1a202c',
+                                   color: '#f6e05e',
+                                   padding: '1px 4px',
+                                   borderRadius: '8px',
+                                   fontSize: '0.55rem',
+                                   fontWeight: 'bold',
+                                   display: 'flex',
+                                   alignItems: 'center',
+                                   gap: '2px',
+                                   zIndex: 5
+                                 }}
+                               >
+                                 <Moon size={8} color="#f6e05e" fill="#f6e05e" />
+                                 <span>ON</span>
+                               </div>
+                             )}
                              <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
                                <Plane size={10} style={{ display: 'inline', marginRight: '4px' }}/>
                                #{f.flightNumber}
