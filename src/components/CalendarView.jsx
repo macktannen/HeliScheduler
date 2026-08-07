@@ -437,8 +437,8 @@ const CalendarView = () => {
                           <span>#{flight.flightNumber}: {flight.title}</span>
                         </div>
                       </div>
-                      <div style={{ fontSize: '0.7rem' }}><strong>Tail:</strong> {flight.aircraftId}</div>
-                      <div style={{ fontSize: '0.7rem' }}><strong>Acc:</strong> {accountName}</div>
+                      <div style={{ fontSize: '0.7rem' }}>{flight.aircraftId}</div>
+                      <div style={{ fontSize: '0.7rem' }}>{accountName}</div>
                       <div style={{ fontSize: '0.7rem' }}><strong>{firstLegPilots.length > 1 ? 'Pilots:' : 'Pilot:'}</strong> {pilotName}</div>
                       
                       {renderRouteDetails(flight, day)}

@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.43] - 2026-08-07
+
+### Changed
+- **Cleaned Flight Card Labels**:
+  - Removed `Tail:` prefix to display the aircraft tail directly (e.g. `N123HA`).
+  - Removed `Acc:` prefix to display the account name directly on flight cards in `CalendarView.jsx`.
+
+---
+
 ## [v0.1.42] - 2026-08-07
 
 ### Fixed
