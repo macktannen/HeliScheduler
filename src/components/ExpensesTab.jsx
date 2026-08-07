@@ -211,20 +211,74 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
     setExpenses([...expenses, { id: Date.now(), category: '', vendor: '', amount: '', description: '', date: defaultDate, payer: '', location: '', fuelType: '', gallons: '', purchaser: aircraftId, receiptCount: 0 }]);
   };
 
-  const handleAutoFillParsedExpense = (parsedData) => {
+  const handleAutoFillParsedExpense = async (parsedData) => {
+    const defaultPayers = ['Avcard', 'Avfuel', 'World Fuel', 'Direct Bill', 'Titan', 'Company Card', 'Personal Card', 'Other'];
+    const defaultFuelTypes = ['Avfuel', 'AEG', 'Atlantic', 'Everest', 'EVO', 'FBO', 'Phillip66', 'Signature', 'Titan', 'World Fuel', 'CAA', 'Other'];
+
+    // Validate category - allow if it matches existing categories OR is a new custom category
+    const validCategory = parsedData.category || '';
+
+    // Validate payment - only use if it matches known payers
+    const allPayers = new Set([...defaultPayers, ...Object.keys(expenseFrequencies.payer)]);
+    const validPayer = parsedData.payment && allPayers.has(parsedData.payment) ? parsedData.payment : '';
+
+    // Fuel logic: only set fuelType/gallons if category is Fuel
+    let validFuelType = '';
+    let validGallons = '';
+    if (validCategory === 'Fuel') {
+      const allFuelTypes = new Set([...defaultFuelTypes, ...Object.keys(expenseFrequencies.fuelType)]);
+      validFuelType = parsedData.fuelType && allFuelTypes.has(parsedData.fuelType) ? parsedData.fuelType : 'FBO';
+      validGallons = parsedData.gallons != null && parsedData.gallons !== '' ? parsedData.gallons : '';
+    }
+
+    // Create vendor if new
+    if (parsedData.vendor && parsedData.vendor.trim()) {
+      try {
+        const storedVendors = JSON.parse(localStorage.getItem('userVendors') || '[]');
+        const vendorExists = storedVendors.some(v => 
+          (v.name || '').toLowerCase() === parsedData.vendor.trim().toLowerCase() ||
+          (v.vendorId || '').toLowerCase() === parsedData.vendor.trim().toLowerCase()
+        );
+        if (!vendorExists) {
+          const newVendor = {
+            vendorId: parsedData.vendor.trim().replace(/\s+/g, '_').substring(0, 10).toUpperCase(),
+            name: parsedData.vendor.trim(),
+            category: validCategory || '',
+            address: '', phone: '', email: '', poc: ''
+          };
+          storedVendors.push(newVendor);
+          localStorage.setItem('userVendors', JSON.stringify(storedVendors));
+          window.dispatchEvent(new Event('storage'));
+        }
+      } catch(e) { console.warn('Vendor creation error:', e); }
+    }
+
+    // Auto-upload document as receipt attachment
+    let receiptFiles = [];
+    let receiptCount = 0;
+    if (parsedData._originalFile) {
+      try {
+        const fileId = await FileStorageService.saveFile(parsedData._originalFile);
+        receiptFiles = [{ fileId, name: parsedData._originalFile.name, type: parsedData._originalFile.type }];
+        receiptCount = 1;
+      } catch(e) { console.warn('Receipt upload error:', e); }
+    }
+
     const newExp = {
       id: Date.now(),
-      category: parsedData.category || 'Other',
+      category: validCategory,
       vendor: parsedData.vendor || '',
-      amount: parsedData.amount || '',
+      amount: parsedData.amount !== '' && parsedData.amount != null ? parsedData.amount : '',
       description: parsedData.invoiceNumber ? `[Inv #${parsedData.invoiceNumber}] ${parsedData.description || ''}` : (parsedData.description || ''),
       date: parsedData.date || defaultDate,
-      payer: '',
+      payer: validPayer,
       location: flightAirports[0] || '',
-      fuelType: parsedData.category === 'Fuel' ? 'Jet-A' : '',
-      gallons: '',
+      fuelType: validFuelType,
+      gallons: validGallons,
       purchaser: aircraftId,
-      receiptCount: 0,
+      receiptFiles,
+      receiptCount,
+      hasReceipt: receiptCount > 0,
       autoParsed: true
     };
     setExpenses([...expenses, newExp]);

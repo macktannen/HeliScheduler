@@ -18,6 +18,8 @@ const AIInvoiceUploader = ({ onExpenseParsed, buttonStyle = {}, compact = false 
     setError(null);
     try {
       const parsedData = await parseInvoiceFile(file, apiKey);
+      // Attach the original file so the expense handler can auto-upload it as a receipt
+      parsedData._originalFile = file;
       if (onExpenseParsed) {
         onExpenseParsed(parsedData);
       }

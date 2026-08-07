@@ -2,6 +2,21 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.54] - 2026-08-07
+
+### Improved
+- **Smart AI Invoice Parsing Overhaul**:
+  - AI prompt now includes exact dropdown option lists for Category, Payment, Fuel Type, and Gallons fields — only fills values it's confident about.
+  - **Category**: Uses exact category names from dropdown. Can create new custom categories if no match fits.
+  - **Payment**: Only selects from existing payment methods (Avcard, Avfuel, World Fuel, etc.). Leaves blank if unknown.
+  - **Fuel Type**: Only populated when category is Fuel. Defaults to "FBO" if fuel supplier isn't in the dropdown list.
+  - **Gallons**: Only filled for fuel invoices with visible quantity. Left blank otherwise.
+  - **Amount**: Total invoice/receipt amount. Left blank if unable to determine.
+  - **Vendor**: Always extracted and auto-creates a new vendor entry in the Vendors list.
+  - **Document Auto-Upload**: Parsed PDF/image is automatically attached as a receipt viewable via the document icon.
+
+---
+
 ## [v0.1.53] - 2026-08-07
 
 ### Fixed

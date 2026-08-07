@@ -195,7 +195,7 @@ const ExpensesPage = () => {
     'Tie-down / Parking', 'Wi-Fi / Data', 'Other'
   ];
 
-  const handleGlobalAutoFillParsedExpense = (parsedData) => {
+  const handleGlobalAutoFillParsedExpense = async (parsedData) => {
     try {
       const storedFlights = JSON.parse(localStorage.getItem('userFlights') || '[]');
       if (storedFlights.length === 0) {
@@ -203,19 +203,71 @@ const ExpensesPage = () => {
         return;
       }
       
+      const defaultPayers = ['Avcard', 'Avfuel', 'World Fuel', 'Direct Bill', 'Titan', 'Company Card', 'Personal Card', 'Other'];
+      const defaultFuelTypes = ['Avfuel', 'AEG', 'Atlantic', 'Everest', 'EVO', 'FBO', 'Phillip66', 'Signature', 'Titan', 'World Fuel', 'CAA', 'Other'];
+
+      // Validate payment against known payers
+      const validPayer = parsedData.payment && defaultPayers.includes(parsedData.payment) ? parsedData.payment : '';
+
+      // Fuel logic
+      let validFuelType = '';
+      let validGallons = '';
+      const validCategory = parsedData.category || '';
+      if (validCategory === 'Fuel') {
+        validFuelType = parsedData.fuelType && defaultFuelTypes.includes(parsedData.fuelType) ? parsedData.fuelType : 'FBO';
+        validGallons = parsedData.gallons != null && parsedData.gallons !== '' ? parsedData.gallons : '';
+      }
+
+      // Create vendor if new
+      if (parsedData.vendor && parsedData.vendor.trim()) {
+        try {
+          const storedVendors = JSON.parse(localStorage.getItem('userVendors') || '[]');
+          const vendorExists = storedVendors.some(v => 
+            (v.name || '').toLowerCase() === parsedData.vendor.trim().toLowerCase() ||
+            (v.vendorId || '').toLowerCase() === parsedData.vendor.trim().toLowerCase()
+          );
+          if (!vendorExists) {
+            const newVendor = {
+              vendorId: parsedData.vendor.trim().replace(/\s+/g, '_').substring(0, 10).toUpperCase(),
+              name: parsedData.vendor.trim(),
+              category: validCategory || '',
+              address: '', phone: '', email: '', poc: ''
+            };
+            storedVendors.push(newVendor);
+            localStorage.setItem('userVendors', JSON.stringify(storedVendors));
+            window.dispatchEvent(new Event('storage'));
+          }
+        } catch(e) { console.warn('Vendor creation error:', e); }
+      }
+
+      // Auto-upload document as receipt
+      let receiptFiles = [];
+      let receiptCount = 0;
+      if (parsedData._originalFile) {
+        try {
+          const { FileStorageService } = await import('../services/FileStorageService');
+          const fileId = await FileStorageService.saveFile(parsedData._originalFile);
+          receiptFiles = [{ fileId, name: parsedData._originalFile.name, type: parsedData._originalFile.type }];
+          receiptCount = 1;
+        } catch(e) { console.warn('Receipt upload error:', e); }
+      }
+
       const targetFlight = storedFlights[0];
       const newExp = {
         id: Date.now(),
-        category: parsedData.category || 'Other',
+        category: validCategory,
         vendor: parsedData.vendor || '',
-        amount: parsedData.amount || 0,
+        amount: parsedData.amount !== '' && parsedData.amount != null ? parsedData.amount : '',
         description: parsedData.invoiceNumber ? `[Inv #${parsedData.invoiceNumber}] ${parsedData.description || ''}` : (parsedData.description || ''),
         date: parsedData.date || targetFlight.date?.split('T')[0] || new Date().toISOString().split('T')[0],
-        payer: '',
+        payer: validPayer,
         location: '',
-        fuelType: parsedData.category === 'Fuel' ? 'Jet-A' : '',
-        gallons: '',
+        fuelType: validFuelType,
+        gallons: validGallons,
         purchaser: targetFlight.aircraftId || '',
+        receiptFiles,
+        receiptCount,
+        hasReceipt: receiptCount > 0,
         isPaid: false,
         autoParsed: true
       };
@@ -227,7 +279,7 @@ const ExpensesPage = () => {
       window.dispatchEvent(new Event('storage'));
       loadExpensesData();
 
-      alert(`✨ Successfully parsed invoice!\nAdded $${parsedData.amount} (${parsedData.vendor}) to Flight #${targetFlight.flightNumber || targetFlight.id}.`);
+      alert(`✨ Successfully parsed invoice!\nAdded ${parsedData.amount ? '$' + parsedData.amount : 'expense'} (${parsedData.vendor || 'Unknown'}) to Flight #${targetFlight.flightNumber || targetFlight.id}.`);
     } catch(err) {
       console.error("Global auto-fill error:", err);
     }

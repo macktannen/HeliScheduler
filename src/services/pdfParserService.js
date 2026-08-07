@@ -71,16 +71,30 @@ export async function parseInvoiceFile(file, customApiKey = null) {
   const { base64, mimeType } = await fileToBase64Image(file);
 
   const promptText = `
-Analyze this invoice or receipt image carefully.
+Analyze this invoice or receipt image carefully. Be CONSERVATIVE - only fill in fields you are confident about. Leave fields as empty string or null if unsure.
+
 Extract the expense details into a valid JSON object matching this schema:
 {
-  "vendor": "String - Vendor or FBO company name (e.g. Signature Flight Support, Atlantic Aviation, Shell Fuel, Marriott, Hertz, Maintenance Shop)",
-  "amount": Number - Total invoice/receipt amount as a number (e.g. 1420.50),
-  "date": "String - Transaction date in YYYY-MM-DD format",
-  "category": "String - Best matching category from: Fuel, Landing Fees, Catering, Hangar/Parking, Hotel/Lodging, Maintenance, Ground Transport, Other",
+  "vendor": "String - The vendor, company, or FBO name exactly as shown on the document. Always fill this in if visible.",
+  "amount": null or Number - The TOTAL invoice/receipt amount as a number (e.g. 1420.50). Use null if you cannot determine the total.
+  "date": "String or null - Transaction date in YYYY-MM-DD format. Use null if not clearly visible.",
+  "category": "String - MUST be one of these exact values: Catering, Cleaning / Detailing, Crew Meal, Customs / Border Fees, De-icing, Fuel, GPU / Start Cart, Ground Transportation, Handling, Hangar / Storage, Hotel, Landing Fee, Lavatory Service, Maintenance / Repairs, Navigation / Overflight, Oil / Fluids, Oxygen Service, Ramp Fee, Tie-down / Parking, Wi-Fi / Data, Other. If none match well, you may suggest a new category name.",
+  "payment": "String or null - ONLY use one of: Avcard, Avfuel, World Fuel, Direct Bill, Titan, Company Card, Personal Card, Other. Use null if payment method is not clearly shown.",
+  "fuelType": "String or null - ONLY if this is a FUEL invoice, use one of: Avfuel, AEG, Atlantic, Everest, EVO, FBO, Phillip66, Signature, Titan, World Fuel, CAA, Other. Use null if this is not a fuel invoice or fuel supplier is not identifiable.",
+  "gallons": null or Number - ONLY if this is a fuel invoice, extract the fuel quantity in gallons as a number. Use null if not a fuel invoice or quantity not shown.",
   "invoiceNumber": "String - Receipt or invoice reference number if visible, or empty string",
-  "description": "String - Brief summary of line items (e.g. 250 gal Jet-A Fuel @ $5.68/gal + Ramp Fee)"
+  "description": "String - Brief summary of line items (e.g. 250 gal Jet-A @ $5.68/gal + Ramp Fee)"
 }
+
+IMPORTANT RULES:
+- For vendor: Always extract the company/business name.
+- For category: Use the EXACT category names from the list above. Only create a new category if nothing in the list fits.
+- For payment: ONLY use values from the list. If you cannot determine payment method, use null.
+- For fuelType: ONLY fill this if the invoice is clearly for fuel. If fuel supplier matches one in the list, use it. Otherwise default to "FBO".
+- For gallons: ONLY fill this if the invoice is for fuel and shows a quantity. Otherwise null.
+- For amount: Must be the total/grand total. If unclear, use null.
+- Leave any field null/empty if you are not confident.
+
 Return ONLY raw JSON, with no markdown formatting.
 `;
 
@@ -147,10 +161,13 @@ Return ONLY raw JSON, with no markdown formatting.
   const parsed = JSON.parse(cleanedJson);
 
   return {
-    vendor: parsed.vendor || 'Unknown Vendor',
-    amount: typeof parsed.amount === 'number' ? parsed.amount : parseFloat(parsed.amount || 0),
-    date: parsed.date || new Date().toISOString().split('T')[0],
-    category: parsed.category || 'Other',
+    vendor: parsed.vendor || '',
+    amount: parsed.amount != null ? (typeof parsed.amount === 'number' ? parsed.amount : parseFloat(parsed.amount)) : '',
+    date: parsed.date || '',
+    category: parsed.category || '',
+    payment: parsed.payment || '',
+    fuelType: parsed.fuelType || '',
+    gallons: parsed.gallons != null ? parsed.gallons : '',
     invoiceNumber: parsed.invoiceNumber || '',
     description: parsed.description || '',
     autoParsed: true
