@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.61] - 2026-08-07
+
+### Improved
+- **Expense Field Auto-Highlight**:
+  - Clicking into any fillable text or number box on expense rows (Date, Gallons, Purchaser, Amount, Notes, and custom category text box) now automatically selects/highlights all text.
+  - Excludes select dropdown menus (Vendor, Category dropdown, Payment, Location, Fuel Type) as requested.
+
+---
+
 ## [v0.1.60] - 2026-08-07
 
 ### Improved

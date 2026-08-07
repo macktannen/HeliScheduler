@@ -22,6 +22,7 @@ const CategoryCombobox = ({ value, onChange, options, style }) => {
           autoFocus={isTyping && !value}
           value={value || ''} 
           onChange={e => onChange(e.target.value)} 
+          onFocus={e => e.target.select()}
           placeholder="Type category..."
           style={{ ...style, paddingRight: '24px', boxSizing: 'border-box' }}
         />
@@ -442,7 +443,7 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                     )}
                   </td>
                   <td style={tdStyle}>
-                    <input type="date" value={exp.date || ''} onChange={e => handleUpdate(exp.id, 'date', e.target.value)} style={inputStyle} />
+                    <input type="date" value={exp.date || ''} onChange={e => handleUpdate(exp.id, 'date', e.target.value)} onFocus={e => e.target.select()} style={inputStyle} />
                   </td>
                   <td style={{ padding: '0 4px', width: '12%' }}>
                     <select
@@ -489,16 +490,16 @@ const ExpensesTab = ({ expenses, setExpenses, legs = [], aircraftId = '', vendor
                     </select>
                   </td>
                   <td style={tdStyle}>
-                    <input type="number" step="1" value={exp.gallons || ''} onChange={e => handleUpdate(exp.id, 'gallons', e.target.value ? parseInt(e.target.value, 10) : '')} style={{ ...inputStyle, textAlign: 'center' }} />
+                    <input type="number" step="1" value={exp.gallons || ''} onChange={e => handleUpdate(exp.id, 'gallons', e.target.value ? parseInt(e.target.value, 10) : '')} onFocus={e => e.target.select()} style={{ ...inputStyle, textAlign: 'center' }} />
                   </td>
                   <td style={tdStyle}>
-                    <input type="text" value={exp.purchaser || ''} onChange={e => handleUpdate(exp.id, 'purchaser', e.target.value)} placeholder="Purchaser" style={inputStyle} />
+                    <input type="text" value={exp.purchaser || ''} onChange={e => handleUpdate(exp.id, 'purchaser', e.target.value)} onFocus={e => e.target.select()} placeholder="Purchaser" style={inputStyle} />
                   </td>
                   <td style={tdStyle}>
-                    <input type="number" step="0.01" value={exp.amount || ''} onChange={e => handleUpdate(exp.id, 'amount', e.target.value ? parseFloat(e.target.value) : '')} style={getStyle(exp, 'amount', { ...inputStyle, textAlign: 'right' })} />
+                    <input type="number" step="0.01" value={exp.amount || ''} onChange={e => handleUpdate(exp.id, 'amount', e.target.value ? parseFloat(e.target.value) : '')} onFocus={e => e.target.select()} style={getStyle(exp, 'amount', { ...inputStyle, textAlign: 'right' })} />
                   </td>
                   <td style={tdStyle}>
-                    <input type="text" value={exp.description || ''} onChange={e => handleUpdate(exp.id, 'description', e.target.value)} placeholder="Notes" style={inputStyle} />
+                    <input type="text" value={exp.description || ''} onChange={e => handleUpdate(exp.id, 'description', e.target.value)} onFocus={e => e.target.select()} placeholder="Notes" style={inputStyle} />
                   </td>
                   <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
