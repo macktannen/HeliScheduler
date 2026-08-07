@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.46] - 2026-08-07
+
+### Changed
+- **Matched Passengers UI Format & Text Size**:
+  - Aligned the dropdown size, label styling, tag font size (`0.62rem`), padding, and dedicated `X` remove button structure of the **Passengers** section to match **Pilots / Crew** in `EventModal.jsx`.
+  - Maintained distinct domain logic: PIC/SIC role toggling remains strictly for Pilots, while Passengers remain a clean passenger assignment list.
+
+---
+
 ## [v0.1.45] - 2026-08-07
 
 ### Fixed

@@ -1282,37 +1282,74 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                             </div>
                           )}
                         </div>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                         <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Passengers ({leg.passengers.length})</label>
-                         <select 
-                           value="" 
-                           onChange={e => {
-                             if (!e.target.value) return;
-                             const paxId = e.target.value;
-                             const current = leg.passengers || [];
-                             if (!current.includes(paxId)) {
-                               handleUpdateLeg(index, 'passengers', [...current, paxId]);
-                             }
-                           }}
-                           style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.8rem', backgroundColor: 'white' }}
-                         >
-                           <option value="">Add Passenger...</option>
-                           {passengersList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                         </select>
-                         {leg.passengers.length > 0 && (
-                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                             {leg.passengers.map(pId => {
-                               const pax = passengersList.find(p => p.id === pId || p.name === pId);
-                               return (
-                                 <div key={pId} style={{ display: 'flex', alignItems: 'center', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>
-                                   {pax ? pax.name : pId}
-                                   <X size={10} style={{ marginLeft: '4px', cursor: 'pointer' }} onClick={() => handleUpdateLeg(index, 'passengers', leg.passengers.filter(p => p !== pId))} />
-                                 </div>
-                               );
-                             })}
-                           </div>
-                         )}
-                       </div>
+                        {/* Passengers */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Passengers ({leg.passengers.length})</label>
+                          <select 
+                            value="" 
+                            onChange={e => {
+                              if (!e.target.value) return;
+                              const paxId = e.target.value;
+                              const current = leg.passengers || [];
+                              if (!current.includes(paxId)) {
+                                handleUpdateLeg(index, 'passengers', [...current, paxId]);
+                              }
+                            }}
+                            style={{ padding: '4px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.75rem', backgroundColor: 'white' }}
+                          >
+                            <option value="">Add Passenger...</option>
+                            {passengersList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                          {leg.passengers.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: '2px' }}>
+                              {leg.passengers.map(pId => {
+                                const pax = passengersList.find(p => p.id === pId || p.name === pId);
+                                return (
+                                  <div 
+                                    key={pId} 
+                                    style={{ 
+                                      display: 'inline-flex', 
+                                      alignItems: 'center', 
+                                      backgroundColor: '#f1f5f9', 
+                                      border: '1px solid #cbd5e1', 
+                                      color: '#475569', 
+                                      borderRadius: '3px', 
+                                      fontSize: '0.62rem', 
+                                      lineHeight: '1.2', 
+                                      overflow: 'hidden', 
+                                      userSelect: 'none', 
+                                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)' 
+                                    }}
+                                  >
+                                    <span style={{ padding: '2px 5px', fontWeight: 'bold' }}>
+                                      {pax ? pax.name : pId}
+                                    </span>
+                                    <span
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleUpdateLeg(index, 'passengers', leg.passengers.filter(p => p !== pId));
+                                      }}
+                                      title="Remove passenger from leg"
+                                      style={{
+                                        padding: '2px 4px',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderLeft: '1px solid rgba(0,0,0,0.12)',
+                                        backgroundColor: 'rgba(0,0,0,0.05)',
+                                        color: '#475569'
+                                      }}
+                                    >
+                                      <X size={9} strokeWidth={2.5} />
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                        {legs.length > 1 && (
                          <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
                            <button onClick={() => handleRemoveLeg(index)} style={{ background: 'none', border: 'none', color: 'red', fontSize: '0.75rem', cursor: 'pointer', padding: '0', width: 'fit-content' }}>Remove Leg</button>
