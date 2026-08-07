@@ -247,8 +247,8 @@ const CrewSchedule = () => {
          const lArrDate = l.arrDate || lDate;
          if (!lDate) return false;
          if (dateStr >= lDate && dateStr <= lArrDate) {
-            if (String(l.pilotId) === String(personId)) return true;
-            if (l.passengers && l.passengers.includes(personId)) return true;
+             if ((l.pilots && l.pilots.some(p => String(p) === String(personId))) || String(l.pilotId) === String(personId)) return true;
+             if (l.passengers && l.passengers.includes(personId)) return true;
          }
          return false;
       });

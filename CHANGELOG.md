@@ -2,6 +2,16 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.39] - 2026-08-07
+
+### Added
+- **Multi-Pilot Selection per Leg**:
+  - Upgraded the leg pilot selection in `EventModal.jsx` to support multi-pilot assignment (`pilots: string[]`), matching the passenger selection UI with tag badges and remove buttons.
+  - Updated `FlightLogTab.jsx` to render the primary pilot as **PIC** and secondary assigned pilots as **SIC**.
+  - Updated `CrewSchedule.jsx` and `CalendarView.jsx` to resolve and display all assigned pilots across schedule rows and calendar cards.
+
+---
+
 ## [v0.1.38] - 2026-08-07
 
 ### Added

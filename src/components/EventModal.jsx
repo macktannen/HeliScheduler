@@ -480,18 +480,26 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                 if (rawDist !== null) dist = Math.round(rawDist);
              }
           }
+          const takeoffDate = l.date || (flight.date ? flight.date.split('T')[0] : initialDateStr);
+          const rawPilots = l.pilots && Array.isArray(l.pilots) && l.pilots.length > 0
+            ? l.pilots
+            : (l.pilotId ? [l.pilotId] : (i === 0 && flight.pilotId ? [flight.pilotId] : []));
           return {
             ...l,
             duration: l.duration || 60,
             distance: dist,
             passengers: l.passengers || (i === 0 && flight.passengers ? flight.passengers : []),
-            pilotId: l.pilotId || (i === 0 && flight.pilotId ? flight.pilotId : ''),
-            date: l.date || (flight.date ? flight.date.split('T')[0] : initialDateStr)
+            pilots: rawPilots,
+            pilotId: rawPilots[0] || '',
+            date: takeoffDate,
+            arrDate: l.arrDate || takeoffDate
           };
         });
         setLegs(mappedLegs);
       } else {
-        setLegs([{ departure: null, destination: null, takeoffTime: '08:00', landTime: '09:00', duration: 60, distance: null, passengers: [], pilotId: '', date: initialDateStr }]);
+        const defaultPilot = getDefaultPilotForDate(initialDateStr);
+        const pilotsArr = defaultPilot ? [defaultPilot] : [];
+        setLegs([{ departure: null, destination: null, takeoffTime: '08:00', landTime: '09:00', duration: 60, distance: null, passengers: [], pilots: pilotsArr, pilotId: defaultPilot, date: initialDateStr, arrDate: initialDateStr }]);
       }
       setAircraftId(flight.aircraftId || '');
     } else {
@@ -508,6 +516,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       setAircraftId('');
       const defaultPilot = getDefaultPilotForDate(initialDateStr);
       const defaultPax = getDefaultPassengersForDate(initialDateStr);
+      const pilotsArr = defaultPilot ? [defaultPilot] : [];
       setLegs([{ 
         departure: null, 
         destination: null, 
@@ -516,8 +525,10 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
         duration: 60, 
         distance: null, 
         passengers: defaultPax, 
+        pilots: pilotsArr,
         pilotId: defaultPilot, 
-        date: initialDateStr 
+        date: initialDateStr,
+        arrDate: initialDateStr
       }]);
     }
   }, [flight, initialDateStr, flightsCount, defaultActiveView]);
@@ -649,7 +660,11 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     leg[field] = value;
     
     if (field === 'date') {
-       leg.pilotId = getDefaultPilotForDate(value) || leg.pilotId;
+       const defPilot = getDefaultPilotForDate(value);
+       if (defPilot && (!leg.pilots || leg.pilots.length === 0)) {
+         leg.pilots = [defPilot];
+         leg.pilotId = defPilot;
+       }
        if (!leg.arrDate || leg.arrDate === oldTakeoffDate || leg.arrDate < value) {
          leg.arrDate = value;
        }
@@ -690,8 +705,15 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
          };
        }
 
+    } else if (field === 'pilots') {
+       const pilotArr = value || [];
+       leg.pilots = pilotArr;
+       leg.pilotId = pilotArr[0] || '';
     } else if (field === 'pilotId') {
        leg.pilotId = value;
+       if (value && (!leg.pilots || leg.pilots.length === 0)) {
+         leg.pilots = [value];
+       }
     } else if (field === 'passengers') {
        leg.passengers = value;
     }
@@ -722,8 +744,9 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
         newDate = formatInTimeZone(nextDepAbs, arrTz, 'yyyy-MM-dd');
       }
     }
-    const defaultPilot = getDefaultPilotForDate(newDate) || lastLeg.pilotId || '';
+    const defaultPilot = getDefaultPilotForDate(newDate) || (lastLeg.pilots && lastLeg.pilots[0]) || lastLeg.pilotId || '';
     const defaultPax = getDefaultPassengersForDate(newDate);
+    const pilotsArr = defaultPilot ? [defaultPilot] : (lastLeg.pilots || []);
     const newLeg = calculateSingleLegArrival({ 
       departure: lastLeg.destination || null, 
       destination: null, 
@@ -732,7 +755,8 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
       duration: 60, 
       distance: null, 
       passengers: defaultPax.length > 0 ? defaultPax : (lastLeg.passengers || []), 
-      pilotId: defaultPilot,
+      pilots: pilotsArr,
+      pilotId: pilotsArr[0] || '',
       date: newDate,
       arrDate: newDate
     });
@@ -1083,13 +1107,43 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
 
                     {/* Crew & Pax (Right Sidebar) */}
                     <div style={{ width: '220px', padding: '4px 8px', borderLeft: '1px solid var(--border-color)', backgroundColor: '#fafbfc', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-                         <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Pilot / Crew</label>
-                         <select value={leg.pilotId} onChange={e => handleUpdateLeg(index, 'pilotId', e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.8rem', backgroundColor: 'white' }}>
-                           <option value="">Select Pilot...</option>
-                           {pilotsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                         </select>
-                       </div>
+                        {/* Pilot / Crew */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            Pilots / Crew ({(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).length})
+                          </label>
+                          <select 
+                            value="" 
+                            onChange={e => {
+                              if (!e.target.value) return;
+                              const pId = e.target.value;
+                              const current = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
+                              if (!current.includes(pId)) {
+                                handleUpdateLeg(index, 'pilots', [...current, pId]);
+                              }
+                            }}
+                            style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.8rem', backgroundColor: 'white' }}
+                          >
+                            <option value="">Add Pilot...</option>
+                            {pilotsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                          {(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
+                              {(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).map(pId => {
+                                const pilot = pilotsList.find(p => p.id === pId || p.name === pId);
+                                return (
+                                  <div key={pId} style={{ display: 'flex', alignItems: 'center', backgroundColor: '#e2e8f0', color: 'var(--primary-color)', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>
+                                    {pilot ? pilot.name : pId}
+                                    <X size={10} style={{ marginLeft: '4px', cursor: 'pointer' }} onClick={() => {
+                                      const current = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
+                                      handleUpdateLeg(index, 'pilots', current.filter(p => p !== pId));
+                                    }} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                          <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Passengers ({leg.passengers.length})</label>
                          <select 

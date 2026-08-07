@@ -360,8 +360,13 @@ const CalendarView = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {dayFlights.map(flight => {
                   const tagColor = flight.tag === 'Emergency' ? '#ed8936' : flight.tag === 'Maintenance' ? '#e53e3e' : '';
-                  const pilot = pilotsList.find(p => String(p.id) === String(flight.pilotId || (flight.legs && flight.legs[0] ? flight.legs[0].pilotId : '')));
-                  const pilotName = pilot ? pilot.name : 'Unknown';
+                  const firstLegPilots = flight.legs && flight.legs[0]
+                    ? (flight.legs[0].pilots && flight.legs[0].pilots.length > 0 ? flight.legs[0].pilots : (flight.legs[0].pilotId ? [flight.legs[0].pilotId] : []))
+                    : (flight.pilotId ? [flight.pilotId] : []);
+                  const pilotName = firstLegPilots.map(pId => {
+                    const p = pilotsList.find(item => String(item.id) === String(pId) || item.name === pId);
+                    return p ? p.name : pId;
+                  }).join(', ') || 'Unknown';
                   const account = accountsList.find(a => a.id === flight.accountId);
                   const accountName = account ? account.name : 'No Account';
                   

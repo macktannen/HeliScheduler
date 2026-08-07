@@ -15,11 +15,16 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
 
   const currentUser = authService.getCurrentUser() || { name: 'Admin', role: 'admin' };
   const isAdmin = currentUser?.role === 'admin';
-  const legPilotId = legs[0]?.pilotId;
-  const pilotName = pilotsList?.find(p => p.id === legPilotId)?.name;
+  const firstLegPilots = legs[0]?.pilots && legs[0]?.pilots.length > 0
+    ? legs[0].pilots
+    : (legs[0]?.pilotId ? [legs[0].pilotId] : []);
   
-  // Pilot can sign if their name matches the scheduled pilot, or if they are admin
-  const canSign = currentUser?.name === pilotName || isAdmin;
+  const assignedPilotNames = firstLegPilots.map(pId => {
+    const p = pilotsList?.find(item => item.id === pId || item.name === pId);
+    return p ? p.name : pId;
+  });
+
+  const canSign = isAdmin || assignedPilotNames.some(name => name === currentUser?.name || name === currentUser?.id);
   
   const isEditable = !log.isLocked;
 
@@ -421,20 +426,29 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
           </thead>
           <tbody>
              {legs.map((leg, index) => {
-               const act = log.legsActuals[index] || {};
-               return (
-                 <tr key={index}>
-                   <td style={{ padding: '2px 4px' }}>{formatLoc(leg.departure)} &rarr; {formatLoc(leg.destination)}</td>
-                   <td style={{ padding: '2px 4px' }}>{leg.date}{leg.arrDate && leg.arrDate !== leg.date ? ` \u2192 ${leg.arrDate}` : ''}</td>
-                   <td style={{ padding: '2px 4px' }}>{act.flightHrs || '0.0'}</td>
-                   <td style={{ padding: '2px 4px' }}>{act.blockHrs || '0.0'}</td>
-                   <td style={{ padding: '2px 4px' }}>{act.hobbs || '0.0'}</td>
-                   <td style={{ padding: '2px 4px' }}>{leg.pilotId || 'Unknown'}</td>
-                   <td style={{ padding: '2px 4px' }}></td>
-                   <td style={{ padding: '2px 4px' }}>{act.totalPax || '0'}</td>
-                 </tr>
-               );
-             })}
+                const act = log.legsActuals[index] || {};
+                const legPilots = leg.pilots && leg.pilots.length > 0 ? leg.pilots : (leg.pilotId ? [leg.pilotId] : []);
+                const getPilotDisplayName = (pId) => {
+                  if (!pId) return '';
+                  const p = pilotsList?.find(item => item.id === pId || item.name === pId);
+                  return p ? p.name : pId;
+                };
+                const picName = legPilots[0] ? getPilotDisplayName(legPilots[0]) : 'Unknown';
+                const sicName = legPilots.slice(1).map(getPilotDisplayName).join(', ');
+
+                return (
+                  <tr key={index}>
+                    <td style={{ padding: '2px 4px' }}>{formatLoc(leg.departure)} &rarr; {formatLoc(leg.destination)}</td>
+                    <td style={{ padding: '2px 4px' }}>{leg.date}{leg.arrDate && leg.arrDate !== leg.date ? ` \u2192 ${leg.arrDate}` : ''}</td>
+                    <td style={{ padding: '2px 4px' }}>{act.flightHrs || '0.0'}</td>
+                    <td style={{ padding: '2px 4px' }}>{act.blockHrs || '0.0'}</td>
+                    <td style={{ padding: '2px 4px' }}>{act.hobbs || '0.0'}</td>
+                    <td style={{ padding: '2px 4px' }}>{picName}</td>
+                    <td style={{ padding: '2px 4px' }}>{sicName}</td>
+                    <td style={{ padding: '2px 4px' }}>{act.totalPax || '0'}</td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
