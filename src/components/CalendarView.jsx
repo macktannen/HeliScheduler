@@ -182,58 +182,67 @@ const CalendarView = () => {
     if (flightId) {
       const id = parseInt(flightId, 10);
       if (id && date) {
+        const targetDateStr = format(date, 'yyyy-MM-dd');
+        
         const updatedFlights = flights.map(f => {
           if (f.id === id) {
-            const targetDateStr = date.toISOString().split('T')[0];
-            
-            if (sourceDayStr) {
-               const sourceDateStr = sourceDayStr.split('T')[0];
-               const newLegs = (f.legs || []).map(l => {
-                  let lDateStr = l.date || (f.date ? f.date.split('T')[0] : null);
-                  if (lDateStr === sourceDateStr) {
-                     return { 
-                       ...l, 
-                       date: targetDateStr, 
-                       pilotId: getDefaultPilotForDate(targetDateStr) || l.pilotId 
-                     };
-                  }
-                  return l;
-               });
-               
-               const earliestDate = newLegs.reduce((earliest, l) => {
-                  if (!l.date) return earliest;
-                  if (!earliest) return l.date;
-                  return new Date(l.date) < new Date(earliest) ? l.date : earliest;
-               }, null);
-               
-               const newFlightDate = earliestDate ? new Date(earliestDate + 'T12:00:00Z').toISOString() : date.toISOString();
-               return { ...f, date: newFlightDate, legs: newLegs };
-            } else {
-              // Legacy offset behavior if no source day
-              const newDateStr = date.toISOString().split('T')[0];
-              const oldFlightDateStr = f.date ? f.date.split('T')[0] : null;
-              let offsetDays = 0;
-              if (oldFlightDateStr) {
-                 const oldD = new Date(oldFlightDateStr + 'T12:00:00Z');
-                 const newD = new Date(newDateStr + 'T12:00:00Z');
-                 offsetDays = Math.round((newD - oldD) / (1000 * 60 * 60 * 24));
-              }
-              const newLegs = (f.legs || []).map(l => {
-                 let lDateStr = l.date || oldFlightDateStr;
-                 if (lDateStr && offsetDays !== 0) {
-                    const ld = new Date(lDateStr + 'T12:00:00Z');
-                    ld.setDate(ld.getDate() + offsetDays);
-                    lDateStr = ld.toISOString().split('T')[0];
-                 }
-                 return { ...l, date: lDateStr || newDateStr };
-              });
-              return { ...f, date: date.toISOString(), legs: newLegs };
+            const legs = f.legs || [];
+            if (legs.length === 0) {
+              return { ...f, date: date.toISOString() };
             }
+
+            const firstLegDepDate = legs[0]?.date || (f.date ? f.date.split('T')[0] : null) || (sourceDayStr ? sourceDayStr.split('T')[0] : targetDateStr);
+            
+            let offsetDays = 0;
+            if (firstLegDepDate && firstLegDepDate !== targetDateStr) {
+               const sourceD = new Date(firstLegDepDate + 'T12:00:00Z');
+               const targetD = new Date(targetDateStr + 'T12:00:00Z');
+               offsetDays = Math.round((targetD.getTime() - sourceD.getTime()) / (1000 * 60 * 60 * 24));
+            }
+
+            const newLegs = legs.map(l => {
+               const lDepDateStr = l.date || firstLegDepDate;
+               const lArrDateStr = l.arrDate || lDepDateStr;
+
+               let newDepDate = lDepDateStr;
+               let newArrDate = lArrDateStr;
+
+               if (offsetDays !== 0) {
+                  if (lDepDateStr) {
+                    const d = new Date(lDepDateStr + 'T12:00:00Z');
+                    d.setDate(d.getDate() + offsetDays);
+                    newDepDate = d.toISOString().split('T')[0];
+                  }
+                  if (lArrDateStr) {
+                    const a = new Date(lArrDateStr + 'T12:00:00Z');
+                    a.setDate(a.getDate() + offsetDays);
+                    newArrDate = a.toISOString().split('T')[0];
+                  }
+               }
+
+               if (newArrDate < newDepDate) {
+                 newArrDate = newDepDate;
+               }
+
+               return {
+                 ...l,
+                 date: newDepDate,
+                 arrDate: newArrDate,
+                 pilotId: getDefaultPilotForDate(newDepDate) || l.pilotId
+               };
+            });
+
+            const earliestDate = newLegs[0]?.date || targetDateStr;
+            const newFlightDate = new Date(earliestDate + 'T12:00:00Z').toISOString();
+
+            return { ...f, date: newFlightDate, legs: newLegs };
           }
           return f;
         });
+
         setFlights(updatedFlights);
         localStorage.setItem('userFlights', JSON.stringify(updatedFlights));
+        window.dispatchEvent(new Event('storage'));
       }
     }
   };

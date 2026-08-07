@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.44] - 2026-08-07
+
+### Fixed
+- **Synchronized Drag-and-Drop Date Shifting**:
+  - Updated `handleDrop` in `CalendarView.jsx` to calculate the date offset when moving a flight card and shift both Takeoff Date (`date`) and Landing Date (`arrDate`) across all legs in sync.
+  - Preserved multi-day overnight leg spans when moving flight cards to new calendar dates.
+
+---
+
 ## [v0.1.43] - 2026-08-07
 
 ### Changed
