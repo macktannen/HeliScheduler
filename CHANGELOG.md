@@ -2,6 +2,14 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.57] - 2026-08-07
+
+### Improved
+- **Button Label Update**:
+  - Renamed the AI invoice upload button to **"Auto-Fill Expense"** across all expense tabs and views.
+
+---
+
 ## [v0.1.56] - 2026-08-07
 
 ### Improved

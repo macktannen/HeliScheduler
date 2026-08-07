@@ -100,7 +100,7 @@ const AIInvoiceUploader = ({ onExpenseParsed, buttonStyle = {}, compact = false 
           ) : (
             <>
               <Sparkles size={compact ? 14 : 16} />
-              <span>Auto-Fill from PDF / Receipt</span>
+              <span>Auto-Fill Expense</span>
             </>
           )}
         </label>
