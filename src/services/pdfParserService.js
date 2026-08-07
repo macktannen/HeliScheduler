@@ -73,9 +73,10 @@ export async function parseInvoiceFile(file, customApiKey = null) {
   // Retrieve existing vendors from localStorage or mockVendors to pass to AI prompt for matching
   let existingVendors = [];
   try {
-    const stored = JSON.parse(localStorage.getItem('userVendors') || '[]');
-    if (stored && stored.length > 0) existingVendors = stored;
-    else {
+    const rawStored = localStorage.getItem('userVendors');
+    if (rawStored !== null) {
+      existingVendors = JSON.parse(rawStored);
+    } else {
       const { mockVendors } = await import('../data');
       existingVendors = mockVendors;
     }

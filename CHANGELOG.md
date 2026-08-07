@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.58] - 2026-08-07
+
+### Fixed
+- **Vendor Auto-Creation Fix**:
+  - Fixed a bug where deleting a vendor caused the system to fall back to `mockVendors` because `localStorage.getItem('userVendors')` returned `[]` (an empty array), preventing new vendor creation.
+  - Tightened vendor matching to exact vendor ID/name so deleted vendors can be re-created cleanly upon uploading a new receipt.
+
+---
+
 ## [v0.1.57] - 2026-08-07
 
 ### Improved

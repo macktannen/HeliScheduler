@@ -222,9 +222,11 @@ const ExpensesPage = () => {
       let finalVendorName = parsedData.vendor || '';
       if (parsedData.vendor && parsedData.vendor.trim()) {
         try {
-          const storedVendors = JSON.parse(localStorage.getItem('userVendors') || '[]');
-          let currentVendors = storedVendors;
-          if (currentVendors.length === 0) {
+          const rawStored = localStorage.getItem('userVendors');
+          let currentVendors = [];
+          if (rawStored !== null) {
+            currentVendors = JSON.parse(rawStored);
+          } else {
             const { mockVendors } = await import('../data');
             currentVendors = mockVendors;
           }
@@ -232,20 +234,16 @@ const ExpensesPage = () => {
           const rawVendorInput = parsedData.vendor.trim().toLowerCase();
           const matchedVendorId = (parsedData.matchedVendorId || '').toLowerCase();
 
-          // 1. Try to find exact or fuzzy match among existing vendors (by ID, vendorId, name, or address)
+          // 1. Try to find exact match among existing vendors (by ID, vendorId, or exact name)
           const matchedVendor = currentVendors.find(v => {
             const vId = (v.id || '').toLowerCase();
             const vVendorId = (v.vendorId || '').toLowerCase();
             const vName = (v.name || '').toLowerCase();
-            const vAddr = (v.address || '').toLowerCase();
 
             return (
               (matchedVendorId && (vId === matchedVendorId || vVendorId === matchedVendorId)) ||
               vName === rawVendorInput ||
-              (vVendorId && vVendorId === rawVendorInput) ||
-              vName.includes(rawVendorInput) ||
-              rawVendorInput.includes(vName) ||
-              (vAddr && rawVendorInput.includes(vAddr))
+              (vVendorId && vVendorId === rawVendorInput)
             );
           });
 
