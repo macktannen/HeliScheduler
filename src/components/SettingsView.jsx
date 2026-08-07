@@ -163,17 +163,35 @@ const SettingsView = () => {
     setTestingKey(true);
     setAiMsg('');
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToTest}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: 'Ping' }] }] })
-      });
-      if (res.ok) {
+      const candidateEndpoints = [
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+        'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
+      ];
+      let res = null;
+      let lastErrText = '';
+      for (const ep of candidateEndpoints) {
+        const testRes = await fetch(`${ep}?key=${keyToTest}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: 'Ping' }] }] })
+        });
+        if (testRes.status === 404) {
+          lastErrText = 'Model endpoint not found (404)';
+          continue;
+        }
+        res = testRes;
+        break;
+      }
+
+      if (res && res.ok) {
         setAiMsg({ type: 'success', text: '✅ API Key Connection Verified Successfully!' });
-      } else {
+      } else if (res) {
         const errData = await res.json();
         setAiMsg({ type: 'error', text: `❌ API Error (${res.status}): ${errData.error?.message || 'Invalid Key'}` });
+      } else {
+        setAiMsg({ type: 'error', text: `❌ Connection failed: ${lastErrText}` });
       }
     } catch(err) {
       setAiMsg({ type: 'error', text: `❌ Connection failed: ${err.message}` });

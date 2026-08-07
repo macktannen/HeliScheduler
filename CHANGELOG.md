@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.50] - 2026-08-07
+
+### Fixed
+- **Multi-Model Endpoint Fallback**:
+  - Implemented automatic sequential fallback (`gemini-2.0-flash`, `v1/gemini-1.5-flash`, `gemini-1.5-flash-latest`, `gemini-1.5-pro`) in `pdfParserService.js` and `SettingsView.jsx`.
+  - Automatically bypasses 404 model routing errors regardless of regional API key tier or endpoint permissions.
+
+---
+
 ## [v0.1.49] - 2026-08-07
 
 ### Fixed

@@ -102,17 +102,37 @@ Return ONLY raw JSON, with no markdown formatting.
     }
   };
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const candidateEndpoints = [
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
+  ];
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
+  let response = null;
+  let lastErrorText = '';
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`AI Invoice Parsing error (${response.status}): ${errText}`);
+  for (const ep of candidateEndpoints) {
+    try {
+      const res = await fetch(`${ep}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+      if (res.status === 404) {
+        lastErrorText = `404 on ${ep}`;
+        continue;
+      }
+      response = res;
+      break;
+    } catch(fetchErr) {
+      lastErrorText = fetchErr.message;
+    }
+  }
+
+  if (!response || !response.ok) {
+    const errText = response ? await response.text() : lastErrorText;
+    throw new Error(`AI Invoice Parsing error (${response ? response.status : 404}): ${errText}`);
   }
 
   const data = await response.json();
