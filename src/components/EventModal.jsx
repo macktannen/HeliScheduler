@@ -770,6 +770,48 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
     setLegs(newLegs);
   };
 
+  const handleAddPilotToLeg = (index, pId) => {
+    if (!pId) return;
+    let newLegs = [...legs];
+    const leg = { ...newLegs[index] };
+    const current = leg.pilots ? [...leg.pilots] : (leg.pilotId ? [leg.pilotId] : []);
+    if (current.includes(pId)) return;
+
+    const updatedPilots = [...current, pId];
+    const updatedRoles = { ...(leg.pilotRoles || {}) };
+
+    if (!Object.values(updatedRoles).includes('PIC')) {
+      updatedRoles[pId] = 'PIC';
+    } else {
+      updatedRoles[pId] = 'SIC';
+    }
+
+    leg.pilots = updatedPilots;
+    leg.pilotRoles = updatedRoles;
+    const picId = Object.keys(updatedRoles).find(id => updatedRoles[id] === 'PIC');
+    leg.pilotId = picId || updatedPilots[0];
+
+    newLegs[index] = leg;
+    setLegs(newLegs);
+  };
+
+  const handleRemovePilotFromLeg = (index, pId) => {
+    let newLegs = [...legs];
+    const leg = { ...newLegs[index] };
+    const current = leg.pilots ? [...leg.pilots] : (leg.pilotId ? [leg.pilotId] : []);
+    const updatedPilots = current.filter(p => String(p) !== String(pId));
+    const updatedRoles = { ...(leg.pilotRoles || {}) };
+    delete updatedRoles[pId];
+
+    leg.pilots = updatedPilots;
+    leg.pilotRoles = updatedRoles;
+    const picId = Object.keys(updatedRoles).find(id => updatedRoles[id] === 'PIC');
+    leg.pilotId = picId || (updatedPilots.length > 0 ? updatedPilots[0] : '');
+
+    newLegs[index] = leg;
+    setLegs(newLegs);
+  };
+
   const handleSort = () => {
     let _legs = [...legs];
     const draggedItemContent = _legs.splice(dragItem.current, 1)[0];
@@ -1164,36 +1206,24 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                             value="" 
                             onChange={e => {
                               if (!e.target.value) return;
-                              const pId = e.target.value;
-                              const current = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
-                              if (!current.includes(pId)) {
-                                const updatedPilots = [...current, pId];
-                                const updatedRoles = { ...(leg.pilotRoles || {}) };
-                                if (!Object.values(updatedRoles).includes('PIC')) {
-                                  updatedRoles[pId] = 'PIC';
-                                } else {
-                                  updatedRoles[pId] = 'SIC';
-                                }
-                                handleUpdateLeg(index, 'pilots', updatedPilots);
-                                handleUpdateLeg(index, 'pilotRoles', updatedRoles);
-                              }
+                              handleAddPilotToLeg(index, e.target.value);
                             }}
-                            style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.8rem', backgroundColor: 'white' }}
+                            style={{ padding: '4px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.75rem', backgroundColor: 'white' }}
                           >
                             <option value="">Add Pilot...</option>
                             {pilotsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                           </select>
                           {(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: '2px' }}>
                               {(leg.pilots || (leg.pilotId ? [leg.pilotId] : [])).map(pId => {
                                 const pilot = pilotsList.find(p => p.id === pId || p.name === pId);
                                 const role = (leg.pilotRoles || {})[pId];
                                 const isPIC = role === 'PIC';
                                 const isSIC = role === 'SIC';
 
-                                const badgeBg = isPIC ? '#fefcbf' : isSIC ? '#ebf8ff' : '#e2e8f0';
-                                const badgeBorder = isPIC ? '1px solid #d69e2e' : isSIC ? '1px solid #3182ce' : '1px solid #cbd5e0';
-                                const badgeTextColor = isPIC ? '#744210' : isSIC ? '#2b6cb0' : 'var(--text-color)';
+                                const badgeBg = isPIC ? '#fefcbf' : isSIC ? '#ebf8ff' : '#f1f5f9';
+                                const badgeBorder = isPIC ? '1px solid #d69e2e' : isSIC ? '1px solid #3182ce' : '1px solid #cbd5e1';
+                                const badgeTextColor = isPIC ? '#744210' : isSIC ? '#2b6cb0' : '#475569';
                                 const roleText = isPIC ? ' [PIC]' : isSIC ? ' [SIC]' : '';
 
                                 return (
@@ -1205,8 +1235,9 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                                       backgroundColor: badgeBg, 
                                       border: badgeBorder,
                                       color: badgeTextColor, 
-                                      borderRadius: '4px', 
-                                      fontSize: '0.7rem',
+                                      borderRadius: '3px', 
+                                      fontSize: '0.62rem',
+                                      lineHeight: '1.2',
                                       overflow: 'hidden',
                                       userSelect: 'none',
                                       boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
@@ -1216,7 +1247,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                                       onClick={() => handleTogglePilotRole(index, pId)}
                                       title="Click to toggle role (PIC -> SIC -> Crew)"
                                       style={{ 
-                                        padding: '3px 6px', 
+                                        padding: '2px 5px', 
                                         cursor: 'pointer', 
                                         fontWeight: 'bold',
                                         display: 'inline-flex',
@@ -1229,26 +1260,21 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         e.preventDefault();
-                                        const currentPilots = leg.pilots || (leg.pilotId ? [leg.pilotId] : []);
-                                        const updatedPilots = currentPilots.filter(p => p !== pId);
-                                        const updatedRoles = { ...(leg.pilotRoles || {}) };
-                                        delete updatedRoles[pId];
-                                        handleUpdateLeg(index, 'pilots', updatedPilots);
-                                        handleUpdateLeg(index, 'pilotRoles', updatedRoles);
+                                        handleRemovePilotFromLeg(index, pId);
                                       }}
                                       title="Remove pilot from leg"
                                       style={{
-                                        padding: '3px 6px',
+                                        padding: '2px 4px',
                                         cursor: 'pointer',
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         borderLeft: '1px solid rgba(0,0,0,0.12)',
-                                        backgroundColor: 'rgba(0,0,0,0.04)',
+                                        backgroundColor: 'rgba(0,0,0,0.05)',
                                         color: badgeTextColor
                                       }}
                                     >
-                                      <X size={11} strokeWidth={2.5} />
+                                      <X size={9} strokeWidth={2.5} />
                                     </span>
                                   </div>
                                 );

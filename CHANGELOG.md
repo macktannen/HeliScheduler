@@ -2,6 +2,15 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.42] - 2026-08-07
+
+### Fixed
+- **Atomic Pilot Removal & Compact Badge Sizing**:
+  - Replaced double state updates with atomic `handleAddPilotToLeg` and `handleRemovePilotFromLeg` helpers in `EventModal.jsx`, fixing the issue where clicking `X` would fail to remove a pilot from the leg.
+  - Compacted pilot tag font size (`0.62rem`), padding (`2px 4px`), and `X` button icon size (`9px`) so multi-pilot badges fit cleanly without inflating leg card height.
+
+---
+
 ## [v0.1.41] - 2026-08-07
 
 ### Fixed
