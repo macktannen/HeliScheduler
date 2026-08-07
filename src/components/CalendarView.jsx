@@ -191,23 +191,25 @@ const CalendarView = () => {
               return { ...f, date: date.toISOString() };
             }
 
-            const firstLegDepDate = legs[0]?.date || (f.date ? f.date.split('T')[0] : null) || (sourceDayStr ? sourceDayStr.split('T')[0] : targetDateStr);
+            const sourceDepDate = sourceDayStr ? sourceDayStr.split('T')[0] : (legs[0]?.date || (f.date ? f.date.split('T')[0] : targetDateStr));
             
             let offsetDays = 0;
-            if (firstLegDepDate && firstLegDepDate !== targetDateStr) {
-               const sourceD = new Date(firstLegDepDate + 'T12:00:00Z');
+            if (sourceDepDate && sourceDepDate !== targetDateStr) {
+               const sourceD = new Date(sourceDepDate + 'T12:00:00Z');
                const targetD = new Date(targetDateStr + 'T12:00:00Z');
                offsetDays = Math.round((targetD.getTime() - sourceD.getTime()) / (1000 * 60 * 60 * 24));
             }
 
             const newLegs = legs.map(l => {
-               const lDepDateStr = l.date || firstLegDepDate;
+               const lDepDateStr = l.date || sourceDepDate;
                const lArrDateStr = l.arrDate || lDepDateStr;
 
-               let newDepDate = lDepDateStr;
-               let newArrDate = lArrDateStr;
+               const legMatchesSource = !sourceDayStr || legs.length === 1 || (sourceDepDate >= lDepDateStr && sourceDepDate <= lArrDateStr);
 
-               if (offsetDays !== 0) {
+               if (legMatchesSource && offsetDays !== 0) {
+                  let newDepDate = lDepDateStr;
+                  let newArrDate = lArrDateStr;
+
                   if (lDepDateStr) {
                     const d = new Date(lDepDateStr + 'T12:00:00Z');
                     d.setDate(d.getDate() + offsetDays);
@@ -218,21 +220,24 @@ const CalendarView = () => {
                     a.setDate(a.getDate() + offsetDays);
                     newArrDate = a.toISOString().split('T')[0];
                   }
+
+                  if (newArrDate < newDepDate) {
+                    newArrDate = newDepDate;
+                  }
+
+                  return {
+                    ...l,
+                    date: newDepDate,
+                    arrDate: newArrDate,
+                    pilotId: getDefaultPilotForDate(newDepDate) || l.pilotId
+                  };
                }
 
-               if (newArrDate < newDepDate) {
-                 newArrDate = newDepDate;
-               }
-
-               return {
-                 ...l,
-                 date: newDepDate,
-                 arrDate: newArrDate,
-                 pilotId: getDefaultPilotForDate(newDepDate) || l.pilotId
-               };
+               return l;
             });
 
-            const earliestDate = newLegs[0]?.date || targetDateStr;
+            const sortedDates = newLegs.map(l => l.date).filter(Boolean).sort();
+            const earliestDate = sortedDates[0] || targetDateStr;
             const newFlightDate = new Date(earliestDate + 'T12:00:00Z').toISOString();
 
             return { ...f, date: newFlightDate, legs: newLegs };

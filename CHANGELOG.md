@@ -2,6 +2,14 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.45] - 2026-08-07
+
+### Fixed
+- **Isolated Leg Card Drag-and-Drop**:
+  - Updated `handleDrop` in `CalendarView.jsx` so dragging a flight card on a multi-day flight only moves the dates of the specific leg corresponding to the dragged card (`sourceDay`), keeping other legs on their scheduled dates untouched.
+
+---
+
 ## [v0.1.44] - 2026-08-07
 
 ### Fixed
