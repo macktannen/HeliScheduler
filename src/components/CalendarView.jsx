@@ -130,13 +130,14 @@ const CalendarView = () => {
   };
 
   const getFlightsForDay = (date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
     const dayFlights = flights.filter(f => {
       if (f.legs && f.legs.length > 0) {
         return f.legs.some(l => {
           const lDate = l.date || (f.date ? f.date.split('T')[0] : null);
+          const lArrDate = l.arrDate || lDate;
           if (!lDate) return false;
-          const d = new Date(lDate + 'T12:00:00Z');
-          return d.getUTCFullYear() === date.getFullYear() && d.getUTCMonth() === date.getMonth() && d.getUTCDate() === date.getDate();
+          return dateStr >= lDate && dateStr <= lArrDate;
         });
       } else if (f.date) {
         return isSameDay(new Date(f.date), date);

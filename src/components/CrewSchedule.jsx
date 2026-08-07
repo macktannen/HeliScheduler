@@ -240,14 +240,16 @@ const CrewSchedule = () => {
   };
 
   const getFlightsForPersonAndDate = (personId, date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
     return flights.filter(f => {
       return (f.legs || []).some(l => {
          const lDate = l.date || (f.date ? f.date.split('T')[0] : null);
+         const lArrDate = l.arrDate || lDate;
          if (!lDate) return false;
-         const lDateObj = new Date(lDate + 'T12:00:00Z');
-         if (lDateObj.getUTCFullYear() !== date.getFullYear() || lDateObj.getUTCMonth() !== date.getMonth() || lDateObj.getUTCDate() !== date.getDate()) return false;
-         if (String(l.pilotId) === String(personId)) return true;
-         if (l.passengers && l.passengers.includes(personId)) return true;
+         if (dateStr >= lDate && dateStr <= lArrDate) {
+            if (String(l.pilotId) === String(personId)) return true;
+            if (l.passengers && l.passengers.includes(personId)) return true;
+         }
          return false;
       });
     });

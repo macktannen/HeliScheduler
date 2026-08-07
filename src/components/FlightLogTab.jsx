@@ -425,7 +425,7 @@ const FlightLogTab = ({ legs, flightLog, setFlightLog, aircraftId, aircraftList,
                return (
                  <tr key={index}>
                    <td style={{ padding: '2px 4px' }}>{formatLoc(leg.departure)} &rarr; {formatLoc(leg.destination)}</td>
-                   <td style={{ padding: '2px 4px' }}>{leg.date}</td>
+                   <td style={{ padding: '2px 4px' }}>{leg.date}{leg.arrDate && leg.arrDate !== leg.date ? ` \u2192 ${leg.arrDate}` : ''}</td>
                    <td style={{ padding: '2px 4px' }}>{act.flightHrs || '0.0'}</td>
                    <td style={{ padding: '2px 4px' }}>{act.blockHrs || '0.0'}</td>
                    <td style={{ padding: '2px 4px' }}>{act.hobbs || '0.0'}</td>

@@ -2,6 +2,19 @@
 
 All notable changes to the Helicopter Scheduler application will be documented in this file.
 
+## [v0.1.34] - 2026-08-07
+
+### Added
+- **Multi-Day Leg Takeoff & Landing Date Support**:
+  - Added dedicated **Takeoff Date** (`date`) and **Landing Date** (`arrDate`) input fields for each flight leg in `EventModal.jsx`.
+  - Automatically defaults the Landing Date to match the Takeoff Date when a leg is initialized or when the Takeoff Date changes.
+  - Enforced `min={leg.date}` and date validation logic to prevent landing dates from being selected backwards in time.
+  - Automatically calculates flight duration (in minutes & decimal hours) across multi-day overnight flight spans (e.g. departing 23:00 and landing 02:30 next day).
+  - Added an overnight indicator badge (`+1d overnight`) on the flight plan leg card when a flight lands on a subsequent date.
+  - Updated `CalendarView.jsx` and `CrewSchedule.jsx` date range queries so multi-day overnight legs render across all spanned calendar days.
+
+---
+
 ## [v0.1.33] - 2026-08-06
 
 ### Added

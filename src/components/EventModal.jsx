@@ -633,55 +633,92 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
 
   const handleUpdateLeg = (index, field, value) => {
     let newLegs = [...legs];
-    newLegs[index][field] = value;
+    const leg = newLegs[index];
+    const oldTakeoffDate = legs[index].date;
+    const oldArrDate = legs[index].arrDate || oldTakeoffDate;
+    leg[field] = value;
     
     if (field === 'date') {
-       newLegs[index].pilotId = getDefaultPilotForDate(value) || newLegs[index].pilotId;
-    }
-    
-    if (field === 'departure' || field === 'destination') {
-       const est = calculateEstimatedMinutes(newLegs[index].departure, newLegs[index].destination, aircraftId);
+       leg.pilotId = getDefaultPilotForDate(value) || leg.pilotId;
+       // Default landing date to match takeoff date if not set or was previously matching takeoff date
+       if (!leg.arrDate || leg.arrDate === oldTakeoffDate || leg.arrDate < value) {
+         leg.arrDate = value;
+       }
+       newLegs = recalculateLegTimes(newLegs);
+
+    } else if (field === 'arrDate') {
+       const takeoffDate = leg.date || new Date().toISOString().split('T')[0];
+       let validArrDate = value;
+       // Prevent backwards dates in time
+       if (!validArrDate || validArrDate < takeoffDate) {
+          validArrDate = takeoffDate;
+       }
+       leg.arrDate = validArrDate;
+
+       if (leg.takeoffTime && leg.landTime) {
+          const depTz = getLocationTimeZone(leg.departure);
+          const arrTz = getLocationTimeZone(leg.destination);
+          const depAbs = toDate(`${takeoffDate}T${leg.takeoffTime}:00`, { timeZone: depTz });
+          const arrAbs = toDate(`${validArrDate}T${leg.landTime}:00`, { timeZone: arrTz });
+          
+          let diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
+          if (diffMins <= 0) {
+             diffMins = 60;
+          }
+          leg.duration = Math.round(diffMins);
+       }
+       if (index < newLegs.length - 1) {
+          newLegs = recalculateLegTimes(newLegs);
+       }
+
+    } else if (field === 'landTime') {
+       leg.landTime = value;
+       const takeoffDate = leg.date || new Date().toISOString().split('T')[0];
+       let arrDateStr = leg.arrDate || takeoffDate;
+       if (arrDateStr < takeoffDate) arrDateStr = takeoffDate;
+
+       if (leg.takeoffTime) {
+          const depTz = getLocationTimeZone(leg.departure);
+          const arrTz = getLocationTimeZone(leg.destination);
+          const depAbs = toDate(`${takeoffDate}T${leg.takeoffTime}:00`, { timeZone: depTz });
+          let arrAbs = toDate(`${arrDateStr}T${value}:00`, { timeZone: arrTz });
+          
+          let diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
+          if (diffMins < 0 && arrDateStr === takeoffDate) {
+             arrAbs = new Date(arrAbs.getTime() + 24 * 60 * 60000);
+             diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
+             arrDateStr = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
+             leg.arrDate = arrDateStr;
+          }
+          leg.duration = Math.max(1, Math.round(diffMins));
+       }
+       if (index < newLegs.length - 1) {
+          newLegs = recalculateLegTimes(newLegs);
+       }
+
+    } else if (field === 'departure' || field === 'destination') {
+       const est = calculateEstimatedMinutes(leg.departure, leg.destination, aircraftId);
        if (est) {
-         newLegs[index].duration = est.mins;
-         newLegs[index].distance = est.nm;
-         const depTz = getLocationTimeZone(newLegs[index].departure);
-         const arrTz = getLocationTimeZone(newLegs[index].destination);
-         const depAbs = toDate(`${newLegs[index].date || new Date().toISOString().split('T')[0]}T${newLegs[index].takeoffTime}:00`, { timeZone: depTz });
+         leg.duration = est.mins;
+         leg.distance = est.nm;
+         const depTz = getLocationTimeZone(leg.departure);
+         const arrTz = getLocationTimeZone(leg.destination);
+         const depAbs = toDate(`${leg.date || new Date().toISOString().split('T')[0]}T${leg.takeoffTime}:00`, { timeZone: depTz });
          const arrAbs = new Date(depAbs.getTime() + est.mins * 60000);
          if (!isNaN(arrAbs.getTime())) {
-           newLegs[index].landTime = formatInTimeZone(arrAbs, arrTz, 'HH:mm');
-           newLegs[index].arrDate = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
-         } else {
-           newLegs[index].landTime = '';
-           newLegs[index].arrDate = '';
+           leg.landTime = formatInTimeZone(arrAbs, arrTz, 'HH:mm');
+           leg.arrDate = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
          }
          newLegs = recalculateLegTimes(newLegs);
        }
-    } else if (field === 'landTime') {
-         newLegs[index].landTime = value;
-         if (newLegs[index].takeoffTime) {
-            const depTz = getLocationTimeZone(newLegs[index].departure);
-            const arrTz = getLocationTimeZone(newLegs[index].destination);
-            const depAbs = toDate(`${newLegs[index].date || new Date().toISOString().split('T')[0]}T${newLegs[index].takeoffTime}:00`, { timeZone: depTz });
-            let arrAbs = toDate(`${newLegs[index].arrDate || newLegs[index].date || new Date().toISOString().split('T')[0]}T${value}:00`, { timeZone: arrTz });
-            
-            let diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
-            if (diffMins < 0) {
-               arrAbs = new Date(arrAbs.getTime() + 24 * 60 * 60000);
-               diffMins = (arrAbs.getTime() - depAbs.getTime()) / 60000;
-               newLegs[index].arrDate = formatInTimeZone(arrAbs, arrTz, 'yyyy-MM-dd');
-            }
-            newLegs[index].duration = parseFloat(diffMins.toFixed(2));
-         }
-         if (index < newLegs.length - 1) {
-            newLegs = recalculateLegTimes(newLegs);
-         }
+
     } else if (field === 'duration') {
        const hours = parseFloat(value) || 0;
        const mins = Math.round(hours * 60);
-       newLegs[index].duration = mins;
+       leg.duration = mins;
        newLegs = recalculateLegTimes(newLegs);
-    } else if (field === 'takeoffTime' || field === 'date') {
+
+    } else if (field === 'takeoffTime') {
        newLegs = recalculateLegTimes(newLegs);
     }
     
@@ -1031,8 +1068,21 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, onDuplicate, onNavigate
 
                     {/* Arrival */}
                     <div style={{ flex: '1', padding: '4px 8px', borderLeft: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <input type="date" value={leg.arrDate || leg.date} onChange={e => handleUpdateLeg(index, 'arrDate', e.target.value)} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', padding: 0 }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input 
+                            type="date" 
+                            value={leg.arrDate || leg.date} 
+                            min={leg.date}
+                            onChange={e => handleUpdateLeg(index, 'arrDate', e.target.value)} 
+                            style={{ fontSize: '0.75rem', color: 'var(--text-muted)', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', padding: 0 }} 
+                          />
+                          {leg.arrDate && leg.date && leg.arrDate > leg.date && (
+                            <span style={{ fontSize: '0.65rem', backgroundColor: '#feebc8', color: '#c05621', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                              +1d overnight
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                            <input type="time" value={leg.landTime} onChange={e => handleUpdateLeg(index, 'landTime', e.target.value)} style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-color)', border: 'none', outline: 'none', cursor: 'pointer' }} />
                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>[{arrTzLabel}]</span>
